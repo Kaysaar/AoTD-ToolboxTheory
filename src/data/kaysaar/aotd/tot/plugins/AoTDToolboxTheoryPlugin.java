@@ -325,8 +325,7 @@ public class AoTDToolboxTheoryPlugin extends BaseModPlugin implements MarketCont
         AoTDEconomy econ2 = (AoTDEconomy) Global.getSector().getEconomy();
         econ2.runMarketAdjustmentAfterEconomyCreation();
         AoTDEconomy.runningPrePlayerEconomy = true;
-        Global.getSector().removeScriptsOfClass(EconomyFleetRouteManager.class);
-        Global.getSector().addScript(new AoTDEconomyRouteManager());
+        AoTDEconomyRouteManager.install();
 
     }
 
@@ -385,6 +384,7 @@ public class AoTDToolboxTheoryPlugin extends BaseModPlugin implements MarketCont
 
     @Override
     public void onGameLoad(boolean newGame) {
+        AoTDEconomyRouteManager.install();
         AoTDStableStructureAdvanceScript.install();
         if (newGame) {
             Set<String> missingStructureSpecs = new LinkedHashSet<>();
@@ -485,3 +485,4 @@ public class AoTDToolboxTheoryPlugin extends BaseModPlugin implements MarketCont
         ColonyUIListener.addMarketListener(new GrandProjectLabelInjector());
     }
 }
+

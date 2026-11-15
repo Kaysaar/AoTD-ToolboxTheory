@@ -861,8 +861,6 @@ public class AoTDStableStructureImpl {
 
             tooltip.addPara("%s: %s days, %s monthly " + installments + ".", 8f, highlight,
                     stageImpl.getName(), String.valueOf(days), String.valueOf(months));
-            tooltip.addPara("Credit cost of this stage (prepaid when ordering construction): %s.", 3f, highlight,
-                    Misc.getDGSCredits(stageImpl.getBuildCostCredits()));
 
             LinkedHashMap<String, Integer> monthlyResources = new LinkedHashMap<>();
             LinkedHashMap<String, Integer> immediateItems = new LinkedHashMap<>();
@@ -1126,10 +1124,6 @@ public class AoTDStableStructureImpl {
                     highlight,
                     credits >= initialCost ? highlight : bad
             );
-        }
-        if (cumulativePreview) {
-            tooltip.addPara("The full %s is required and charged when construction begins. Future stages will not charge credits again.",
-                    3f, credits >= initialCost ? highlight : bad, Misc.getDGSCredits(initialCost));
         }
 
         if (mode != AoTDStableStructureTooltipMode.PANEL) {

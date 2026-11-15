@@ -1,5 +1,6 @@
 package data.kaysaar.aotd.tot.intel;
 
+import com.fs.starfarer.api.Global;
 import com.fs.starfarer.api.campaign.econ.CommodityOnMarketAPI;
 import com.fs.starfarer.api.impl.campaign.fleets.EconomyFleetAssignmentAI;
 import com.fs.starfarer.api.impl.campaign.fleets.RouteManager;
@@ -17,6 +18,22 @@ import java.util.ArrayList;
 public class AoTDTradeFleetDepartureIntel extends TradeFleetDepartureIntel {
     public AoTDTradeFleetDepartureIntel(RouteManager.RouteData route) {
         super(route);
+        // The vanilla constructor returns before queueing when the outward leg is
+        // empty. ToT also supports collection trips with cargo only on the return.
+        // Outward-loaded routes keep vanilla's registration; never queue them twice.
+        if (!deliverList.isEmpty() || returnList.isEmpty()) return;
+        float probability = 0.1f + (large ? 0.1f : 0f);
+        boolean sameLocation = data.from.getContainingLocation() != null
+                && data.from.getContainingLocation() == Global.getSector().getPlayerFleet().getContainingLocation()
+                && !data.from.getContainingLocation().isHyperspace();
+        if (sameLocation) probability = 1f;
+        float target = Global.getSettings().getFloat("targetNumTradeFleetNotifications");
+        float existing = Global.getSector().getIntelManager().getIntelCount(TradeFleetDepartureIntel.class, true);
+        probability *= Math.min(1f, Misc.getProbabilityMult(target, existing, 0.5f));
+        if (Math.random() > probability) return;
+        setPostingRangeLY(Math.max(0f, data.size - 6f), true);
+        setPostingLocation(data.from.getPrimaryEntity());
+        Global.getSector().getIntelManager().queueIntel(this);
     }
     public void createSmallDescription(TooltipMakerAPI info, float width, float height) {
         initTransientData();
@@ -102,3 +119,4 @@ public class AoTDTradeFleetDepartureIntel extends TradeFleetDepartureIntel {
         }
     }
 }
+

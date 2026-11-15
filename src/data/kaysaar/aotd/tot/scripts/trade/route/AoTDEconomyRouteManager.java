@@ -31,11 +31,57 @@ import data.kaysaar.aotd.tot.scripts.trade.route.AoTDEconomyFleetAssigmentAI.AoT
 import java.util.*;
 
 public class AoTDEconomyRouteManager extends EconomyFleetRouteManager {
+    private transient float diagnosticDays;
+    private transient int attempts, noSource, noDestination, emptyCargo, simulatedLosses;
+    private transient int routesCreated, fleetsSpawned, failedSpawns;
+
+    /** Keep the saved manager (and its cooldowns); repair saves where it is absent. */
+    public static void install() {
+        boolean installed = false;
+        for (com.fs.starfarer.api.EveryFrameScript script :
+                new ArrayList<>(Global.getSector().getScripts())) {
+            if (script instanceof AoTDEconomyRouteManager) {
+                if (installed) Global.getSector().removeScript(script);
+                installed = true;
+            } else if (script.getClass() == EconomyFleetRouteManager.class) {
+                // Exact class only: do not remove another mod's subclass.
+                Global.getSector().removeScript(script);
+            }
+        }
+        if (!installed) {
+            Global.getSector().addScript(new AoTDEconomyRouteManager());
+            log.info("[AoTD trade] Installed missing trade route manager");
+        }
+        log.info("[AoTD trade] Manager ready; existing routes="
+                + RouteManager.getInstance().getNumRoutesFor(SOURCE_ID));
+    }
+
+    @Override
+    public void advance(float amount) {
+        super.advance(amount);
+        diagnosticDays += Global.getSector().getClock().convertToDays(amount);
+        if (diagnosticDays < 30f) return;
+        diagnosticDays = 0f;
+        log.info("[AoTD trade] 30-day summary: attempts=" + attempts
+                + ", noSource=" + noSource + ", noDestination=" + noDestination
+                + ", emptyCargo=" + emptyCargo + ", simulatedLosses=" + simulatedLosses
+                + ", routesCreated=" + routesCreated + ", fleetsSpawned=" + fleetsSpawned
+                + ", failedSpawns=" + failedSpawns + ", routes="
+                + RouteManager.getInstance().getNumRoutesFor(getRouteSourceId())
+                + "/" + getMaxFleets());
+        attempts = noSource = noDestination = emptyCargo = simulatedLosses = 0;
+        routesCreated = fleetsSpawned = failedSpawns = 0;
+    }
+
     @Override
     public MarketAPI pickSourceMarket() {
+        return pickSourceMarket(Collections.emptySet());
+    }
+
+    private MarketAPI pickSourceMarket(Set<String> tried) {
         WeightedRandomPicker<MarketAPI> markets = new WeightedRandomPicker<>();
         for (MarketAPI market : Global.getSector().getEconomy().getMarketsCopy()) {
-            if (!canTrade(market)) continue;
+            if (!canTrade(market) || tried.contains(market.getId())) continue;
             if (recentlySentTradeFleet.contains(market.getId())) continue;
             markets.add(market, market.getSize());
         }
@@ -180,10 +226,23 @@ public class AoTDEconomyRouteManager extends EconomyFleetRouteManager {
 
     @Override
     protected void addRouteFleetIfPossible() {
-        MarketAPI from = pickSourceMarket();
-        MarketAPI to = pickDestMarket(from);
-        if (from == null || to == null) return;
-        AoTDEconomyRouteData data = createData(from, to);
+        attempts++;
+        MarketAPI from = null;
+        MarketAPI to = null;
+        AoTDEconomyRouteData data = null;
+        Set<String> tried = new HashSet<>();
+        // A market with no trading partner must not waste the entire attempt.
+        // Bound the work; still create at most one route per vanilla interval.
+        for (int i = 0; i < 4; i++) {
+            from = pickSourceMarket(tried);
+            if (from == null) { noSource++; break; }
+            tried.add(from.getId());
+            to = pickDestMarket(from);
+            if (to == null) { noDestination++; continue; }
+            data = createData(from, to);
+            if (data != null) break;
+            emptyCargo++;
+        }
         if (data == null) return;
         RouteManager.OptionalFleetData extra = new RouteManager.OptionalFleetData(from);
         String factionId = from.getFactionId();
@@ -215,6 +274,7 @@ public class AoTDEconomyRouteManager extends EconomyFleetRouteManager {
         if (Math.random() < pLoss) {
             // No fleet was generated, so there is no capacity-limited cargo to lose yet.
             RouteManager.getInstance().removeRoute(route);
+            simulatedLosses++;
             return;
         }
 
@@ -226,6 +286,8 @@ public class AoTDEconomyRouteManager extends EconomyFleetRouteManager {
         route.addSegment(new RouteManager.RouteSegment(ROUTE_TRAVEL_SRC, to.getPrimaryEntity(), from.getPrimaryEntity()));
         route.addSegment(new RouteManager.RouteSegment(ROUTE_SRC_UNLOAD, orbitDays, from.getPrimaryEntity()));
         setDelayAndSendMessage(route, factionId);
+        routesCreated++;
+        log.debug("[AoTD trade] Route created: " + from.getId() + " -> " + to.getId());
         recentlySentTradeFleet.add(from.getId(), Global.getSettings().getFloat("minEconSpawnIntervalPerMarket"));
     }
 
@@ -233,7 +295,13 @@ public class AoTDEconomyRouteManager extends EconomyFleetRouteManager {
     public CampaignFleetAPI spawnFleet(RouteManager.RouteData route) {
         Random random = route.getSeed() == null ? new Random() : new Random(route.getSeed());
         CampaignFleetAPI fleet = createTradeRouteFleet(route, random);
-        if (fleet == null) return null;
+        if (fleet == null) {
+            failedSpawns++;
+            log.debug("[AoTD trade] Fleet generation failed or route became isolated");
+            return null;
+        }
+        fleetsSpawned++;
+        log.debug("[AoTD trade] Fleet spawned: " + fleet.getName());
         EconomyRouteData data = (EconomyRouteData) route.getCustom();
         if (KantaCMD.playerHasProtection() && (data.from.getFaction().isPlayerFaction() || data.to.getFaction().isPlayerFaction())) {
             fleet.getMemoryWithoutUpdate().set(MemFlags.FLEET_IGNORED_BY_FACTION, Factions.PIRATES);
@@ -360,3 +428,4 @@ public class AoTDEconomyRouteManager extends EconomyFleetRouteManager {
         if (!Factions.PLAYER.equals(factionId)) new AoTDTradeFleetDepartureIntel(route);
     }
 }
+
