@@ -15,6 +15,7 @@ import com.fs.starfarer.api.ui.PositionAPI;
 import com.fs.starfarer.api.ui.TooltipMakerAPI;
 import com.fs.starfarer.api.util.Misc;
 import data.kaysaar.aotd.tot.stablestructures.AoTDStableStructureImpl;
+import data.kaysaar.aotd.tot.misc.AoTDToolboxMisc;
 import data.kaysaar.aotd.tot.stablestructures.AoTDStableStructureSpec;
 import data.kaysaar.aotd.tot.stablestructures.AoTDStableStructureSpecManager;
 import org.lwjgl.util.vector.Vector2f;
@@ -82,6 +83,7 @@ public class StableStructureWidget implements ExtendedUIPanelPlugin {
         ButtonWithImageComponent viewer = new ButtonWithImageComponent(contentPanel.getPosition().getWidth(),125,getStructure() != null ? getStructure().getImageName() : token.getCustomEntitySpec().getInteractionImage()){
             @Override
             public void performActionOnClick(boolean isRightClick) {
+                if (AoTDToolboxMisc.isStoryCriticalStructure(token)) return;
                 StableStructureWidgetButtons bt = new StableStructureWidgetButtons(widget);
                 if (!bt.hasOptions()) return;
                 this.setClickable(false);
@@ -89,6 +91,8 @@ public class StableStructureWidget implements ExtendedUIPanelPlugin {
             }
         };
         viewer.setEnableRightClick(false);
+        // A story-critical structure may still be displayed, but not operated on.
+        viewer.setClickable(!AoTDToolboxMisc.isStoryCriticalStructure(token));
 
         TooltipMakerAPI tooltip = contentPanel.createUIElement(contentPanel.getPosition().getWidth(),contentPanel.getPosition().getHeight(),false);
         Color c = Misc.getGrayColor();
@@ -130,6 +134,10 @@ public class StableStructureWidget implements ExtendedUIPanelPlugin {
                 @Override
                 public void createTooltip(TooltipMakerAPI tooltip, boolean expanded, Object tooltipParam) {
                     impl.createTooltip(tooltip, AoTDStableStructureImpl.AoTDStableStructureTooltipMode.PANEL);
+                    if (AoTDToolboxMisc.isStoryCriticalStructure(token)) {
+                        tooltip.addPara("Story-critical structure: player management is locked.",
+                                Misc.getNegativeHighlightColor(), 5f);
+                    }
                 }
             },contentPanel, TooltipMakerAPI.TooltipLocation.LEFT,false);
             mainPanel.addComponent(contentPanel).inTL(0,0);

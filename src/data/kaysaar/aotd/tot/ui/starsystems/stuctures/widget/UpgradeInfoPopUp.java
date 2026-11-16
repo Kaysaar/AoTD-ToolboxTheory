@@ -35,7 +35,8 @@ public class UpgradeInfoPopUp extends BasePopUpDialog {
         AoTDStableStructureImpl current = widget.getStructure();
         if (current == null || !current.isCurrentImplementation() || !current.isPlayerOwned()
                 || current.isBuilding() || current.isDisrupted()
-                || current.getCurrentlyTiedEntity() == null) return false;
+                || current.getCurrentlyTiedEntity() == null
+                || AoTDToolboxMisc.isStoryCriticalStructure(current.getCurrentlyTiedEntity())) return false;
 
         // The confirmation may stay open while the underlying structure changes.
         boolean directUpgrade = false;

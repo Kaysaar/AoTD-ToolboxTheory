@@ -42,7 +42,10 @@ public class StarSystemStructuresUI implements ExtendedUIPanelPlugin {
     public List<SectorEntityToken> getStructureEntities() {
         List<SectorEntityToken> entities = AoTDToolboxMisc.getSystemStructureEntities(system);
         for (SectorEntityToken token : system.getAllEntities()) {
-            if (token.isExpired() || token.getCustomEntitySpec() == null) continue;
+            // Keep registered story-critical entities visible as read-only widgets.
+            // The explicit aotd_ignore_system_structures tag still hides its target.
+            if (token.isExpired() || AoTDToolboxMisc.hasIgnoreSystemStructuresTag(token)
+                    || token.getCustomEntitySpec() == null) continue;
             if (AoTDStableStructureSpecManager.getSpec(token.getCustomEntitySpec().getId()) == null) continue;
             if (!entities.contains(token)) entities.add(token);
         }

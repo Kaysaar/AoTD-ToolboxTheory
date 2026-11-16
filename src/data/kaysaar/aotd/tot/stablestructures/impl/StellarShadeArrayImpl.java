@@ -1,5 +1,9 @@
 package data.kaysaar.aotd.tot.stablestructures.impl;
 
+import data.kaysaar.aotd.vok.scripts.research.AoTDMainResearchManager;
+import com.fs.starfarer.api.Global;
+import com.fs.starfarer.api.campaign.StarSystemAPI;
+import com.fs.starfarer.api.campaign.FactionAPI;
 import com.fs.starfarer.api.campaign.econ.Industry.AICoreDescriptionMode;
 import com.fs.starfarer.api.campaign.econ.MarketAPI;
 import com.fs.starfarer.api.campaign.econ.MarketImmigrationModifier;
@@ -9,6 +13,23 @@ import com.fs.starfarer.api.ui.TooltipMakerAPI;
 import com.fs.starfarer.api.util.Misc;
 
 public class StellarShadeArrayImpl extends AoTDPlanetarySolarArrayImpl implements MarketImmigrationModifier {
+    @Override
+    public boolean isAvailableToBuild(StarSystemAPI system, FactionAPI faction) {
+        if (Global.getSettings().getModManager().isModEnabled("aotd_vok")
+                && (faction == null || !AoTDMainResearchManager.getInstance()
+                .isAvailableForFaction("aotd_tech_stellar_irradiance_engineering", faction))) return false;
+        return super.isAvailableToBuild(system, faction);
+    }
+
+    @Override
+    public boolean showWhenUnavailable(StarSystemAPI system, FactionAPI faction) {
+        if (Global.getSettings().getModManager().isModEnabled("aotd_vok")) {
+            return faction != null && AoTDMainResearchManager.getInstance()
+                    .isAvailableForFaction("aotd_tech_stellar_irradiance_engineering", faction);
+        }
+        return super.showWhenUnavailable(system, faction);
+    }
+
 
     @Override
     public boolean isShade() {

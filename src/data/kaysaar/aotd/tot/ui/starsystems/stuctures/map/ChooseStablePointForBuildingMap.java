@@ -12,6 +12,7 @@ import com.fs.starfarer.api.ui.TooltipMakerAPI;
 import com.fs.starfarer.api.util.Misc;
 import java.awt.Color;
 import data.kaysaar.aotd.tot.stablestructures.AoTDStableStructureSpecManager;
+import data.kaysaar.aotd.tot.misc.AoTDToolboxMisc;
 import org.lwjgl.input.Keyboard;
 import org.lwjgl.util.vector.Vector2f;
 
@@ -43,6 +44,7 @@ public class ChooseStablePointForBuildingMap extends MapMainComponent implements
         return token!=null && !token.isExpired() && token.getStarSystem()==currentStarSystem
                 && token.getCustomEntitySpec()!=null
                 && Entities.STABLE_LOCATION.equals(token.getCustomEntitySpec().getId())
+                && !AoTDToolboxMisc.isStoryCriticalStructure(token)
                 && !token.getMemoryWithoutUpdate().contains(AoTDStableStructureSpecManager.memKeyInEntities);
     }
 

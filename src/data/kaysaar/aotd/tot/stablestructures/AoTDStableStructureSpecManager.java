@@ -60,6 +60,9 @@ public class AoTDStableStructureSpecManager {
                     spec.downgrade = downgrades;
 
                 }
+                if (Global.getSettings().getCustomEntitySpec(id) == null) {
+                    continue;
+                }
                 spec.totalResourcesNeeded = loadResourceCosts(resources);
                 specsList.put(id, spec);
             }

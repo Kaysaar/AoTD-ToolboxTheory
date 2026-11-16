@@ -56,6 +56,7 @@ public class AoTDStableStructureConstruction {
         if (!AoTDToolboxMisc.hasAvailableSystemStructureSlot(system)) return false;
         if (focus != null && (focus.isExpired() || focus.getContainingLocation() != system
                 || !system.getAllEntities().contains(focus))) return false;
+        if (isStablePoint(focus) && AoTDToolboxMisc.isStoryCriticalStructure(focus)) return false;
         if (isStablePoint(focus) && focus.getMemoryWithoutUpdate().contains(AoTDStableStructureSpecManager.memKeyInEntities)) return false;
         if (focus != null && !isStablePoint(focus) && Vector2f.sub(position, focus.getLocation(), null).length() <= focus.getRadius()) return false;
         if (base instanceof AoTDLinkedStructureImpl linked && !linked.canPlaceAt(system, focus, position)) return false;
@@ -139,6 +140,9 @@ public class AoTDStableStructureConstruction {
         CustomCampaignEntityAPI built = location.addCustomEntity(Misc.genUID(), name, next.id, current.getFaction().getId());
         copyPosition(current, built);
         built.addTag(AoTDTags.AOTD_OBJECTIVE);
+        if (current.hasTag(AoTDTags.STORY_CRITICAL)) built.addTag(AoTDTags.STORY_CRITICAL);
+        if (current.hasTag(AoTDTags.AOTD_IGNORE_SYSTEM_STRUCTURES))
+            built.addTag(AoTDTags.AOTD_IGNORE_SYSTEM_STRUCTURES);
         Object widgetOrder = current.getMemoryWithoutUpdate().get(WIDGET_ORDER);
         if (widgetOrder != null) built.getMemoryWithoutUpdate().set(WIDGET_ORDER, widgetOrder);
         Object original = current.getMemoryWithoutUpdate().get(ORIGINAL_LOCATION);
@@ -169,7 +173,8 @@ public class AoTDStableStructureConstruction {
     }
 
     public static boolean canDowngrade(AoTDStableStructureImpl impl) {
-        if (impl == null || !impl.isCurrentImplementation() || !impl.isPlayerOwned() || impl.isBuilding()) return false;
+        if (impl == null || AoTDToolboxMisc.isStoryCriticalStructure(impl.getCurrentlyTiedEntity())
+                || !impl.isCurrentImplementation() || !impl.isPlayerOwned() || impl.isBuilding()) return false;
         AoTDStableStructureSpec spec = impl.getSpec();
         return spec != null && spec.getDowngrade() != null
                 && AoTDStableStructureSpecManager.getSpec(spec.getDowngrade()) != null;
@@ -199,12 +204,14 @@ public class AoTDStableStructureConstruction {
     }
 
     public static boolean canCancelConstruction(AoTDStableStructureImpl impl) {
-        return impl != null && impl.isCurrentImplementation() && impl.isPlayerOwned()
+        return impl != null && !AoTDToolboxMisc.isStoryCriticalStructure(impl.getCurrentlyTiedEntity())
+                && impl.isCurrentImplementation() && impl.isPlayerOwned()
                 && impl.isBuilding() && !impl.isUpgrading();
     }
 
     public static boolean canCancelUpgrade(AoTDStableStructureImpl impl) {
-        return impl != null && impl.isCurrentImplementation() && impl.isPlayerOwned()
+        return impl != null && !AoTDToolboxMisc.isStoryCriticalStructure(impl.getCurrentlyTiedEntity())
+                && impl.isCurrentImplementation() && impl.isPlayerOwned()
                 && (impl.isUpgrading() || (!impl.isBuilding() && impl.ultimateUpgradeId != null));
     }
 
@@ -252,7 +259,8 @@ public class AoTDStableStructureConstruction {
     }
 
     public static boolean canShutDown(AoTDStableStructureImpl impl) {
-        return impl != null && impl.isCurrentImplementation() && impl.isPlayerOwned() && impl.canBeShutDown();
+        return impl != null && !AoTDToolboxMisc.isStoryCriticalStructure(impl.getCurrentlyTiedEntity())
+                && impl.isCurrentImplementation() && impl.isPlayerOwned() && impl.canBeShutDown();
     }
 
     public static long getShutdownRefund(AoTDStableStructureImpl impl) {
@@ -316,7 +324,8 @@ public class AoTDStableStructureConstruction {
     }
 
     private static void restoreStableLocation(SectorEntityToken current) {
-        if (current == null || current.getContainingLocation() == null) return;
+        if (current == null || current.getContainingLocation() == null
+                || AoTDToolboxMisc.shouldIgnoreSystemStructure(current)) return;
 
         // Naturally spawned and legacy structures have no placement flag, but still occupy a stable location.
         // Explicitly free-placed structures carry the flag set to false and must not create stable points.

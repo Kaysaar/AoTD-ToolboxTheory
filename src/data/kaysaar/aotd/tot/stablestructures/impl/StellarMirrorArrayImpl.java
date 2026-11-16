@@ -1,5 +1,9 @@
 package data.kaysaar.aotd.tot.stablestructures.impl;
 
+import data.kaysaar.aotd.vok.scripts.research.AoTDMainResearchManager;
+import com.fs.starfarer.api.Global;
+import com.fs.starfarer.api.campaign.StarSystemAPI;
+import com.fs.starfarer.api.campaign.FactionAPI;
 import com.fs.starfarer.api.campaign.econ.Industry;
 import com.fs.starfarer.api.campaign.econ.Industry.AICoreDescriptionMode;
 import com.fs.starfarer.api.campaign.econ.MarketAPI;
@@ -12,6 +16,23 @@ import data.kaysaar.aotd.tot.industries.AoTDBaseIndustry;
 import data.kaysaar.aotd.tot.scripts.commoditydata.AoTDIndustryAmounts;
 
 public class StellarMirrorArrayImpl extends AoTDPlanetarySolarArrayImpl {
+    @Override
+    public boolean isAvailableToBuild(StarSystemAPI system, FactionAPI faction) {
+        if (Global.getSettings().getModManager().isModEnabled("aotd_vok")
+                && (faction == null || !AoTDMainResearchManager.getInstance()
+                .isAvailableForFaction("aotd_tech_stellar_irradiance_engineering", faction))) return false;
+        return super.isAvailableToBuild(system, faction);
+    }
+
+    @Override
+    public boolean showWhenUnavailable(StarSystemAPI system, FactionAPI faction) {
+        if (Global.getSettings().getModManager().isModEnabled("aotd_vok")) {
+            return faction != null && AoTDMainResearchManager.getInstance()
+                    .isAvailableForFaction("aotd_tech_stellar_irradiance_engineering", faction);
+        }
+        return super.showWhenUnavailable(system, faction);
+    }
+
 
     @Override
     public boolean isShade() {

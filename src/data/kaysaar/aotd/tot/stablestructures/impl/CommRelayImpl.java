@@ -1,5 +1,8 @@
 package data.kaysaar.aotd.tot.stablestructures.impl;
 
+import data.kaysaar.aotd.vok.scripts.research.AoTDMainResearchManager;
+import com.fs.starfarer.api.campaign.StarSystemAPI;
+import com.fs.starfarer.api.campaign.FactionAPI;
 import com.fs.starfarer.api.Global;
 import com.fs.starfarer.api.campaign.econ.Industry.AICoreDescriptionMode;
 import com.fs.starfarer.api.campaign.econ.MarketAPI;
@@ -10,6 +13,25 @@ import com.fs.starfarer.api.util.Misc;
 import data.kaysaar.aotd.tot.stablestructures.AoTDStableStructureImpl;
 
 public class CommRelayImpl extends AoTDStableStructureImpl {
+    @Override
+    public boolean isAvailableToBuild(StarSystemAPI system, FactionAPI faction) {
+        if (this instanceof CommRelayMakeshiftImpl) return super.isAvailableToBuild(system, faction);
+        if (Global.getSettings().getModManager().isModEnabled("aotd_vok")
+                && (faction == null || !AoTDMainResearchManager.getInstance()
+                .isAvailableForFaction("aotd_tech_domain_network_engineering", faction))) return false;
+        return super.isAvailableToBuild(system, faction);
+    }
+
+    @Override
+    public boolean showWhenUnavailable(StarSystemAPI system, FactionAPI faction) {
+        if (this instanceof CommRelayMakeshiftImpl) return super.showWhenUnavailable(system, faction);
+        if (Global.getSettings().getModManager().isModEnabled("aotd_vok")) {
+            return faction != null && AoTDMainResearchManager.getInstance()
+                    .isAvailableForFaction("aotd_tech_domain_network_engineering", faction);
+        }
+        return super.showWhenUnavailable(system, faction);
+    }
+
 
     protected float getStabilityBonus() {
         return CommRelayCondition.COMM_RELAY_BONUS;

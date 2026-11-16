@@ -225,6 +225,10 @@ public class StableStructureUpgradePathUI extends PopUpUI {
             StableStructureUpgradeNode node = new StableStructureUpgradeNode(
                     spec, impl, nodeWidth, nodeHeight, imageWidth, imageHeight
             );
+            if (node.getQueueButton() != null) {
+                node.getQueueButton().setEnabled(impl.isAvailableToBuild(
+                        systemAPI, Global.getSector().getPlayerFaction()));
+            }
             Vector2f position = entry.getValue();
 
             tooltip.addCustom(node.getMainPanel(), 0f).getPosition().inTL(position.x, position.y);
@@ -312,7 +316,16 @@ public class StableStructureUpgradePathUI extends PopUpUI {
 
         for (StableStructureUpgradeNode node : nodes.values()) {
             ButtonAPI button = node.getQueueButton();
-            if (button == null || !button.isChecked()) continue;
+            if (button == null) continue;
+
+            boolean available = node.getImpl().isAvailableToBuild(
+                    systemAPI, Global.getSector().getPlayerFaction());
+            if (button.isEnabled() != available) button.setEnabled(available);
+            if (!available) {
+                button.setChecked(false);
+                continue;
+            }
+            if (!button.isChecked()) continue;
 
             button.setChecked(false);
             if (queueHandler != null) {

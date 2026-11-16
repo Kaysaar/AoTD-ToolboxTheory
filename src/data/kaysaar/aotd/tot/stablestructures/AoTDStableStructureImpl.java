@@ -226,7 +226,8 @@ public class AoTDStableStructureImpl {
 
     public boolean startBuilding(String ultimateTargetId) {
         requireCurrentImplementation();
-        if (isBuilding || isDisrupted() || !isPlayerOwned()) return false;
+        if (isBuilding || isDisrupted() || !isPlayerOwned()
+                || AoTDToolboxMisc.isStoryCriticalStructure(currentlyAssignedToken)) return false;
         String target = ultimateTargetId == null ? id : ultimateTargetId;
         LinkedHashMap<String, Float> futureCosts = getUpgradeStageCosts(
                 AoTDStableStructureSpecManager.getUpgradePath(id, target));
@@ -260,6 +261,7 @@ public class AoTDStableStructureImpl {
         if (ultimateTargetId == null) throw new IllegalArgumentException("An upgrade needs a target");
         // Do not queue an unpaid upgrade or replace an already-running construction order.
         if (isBuilding || isDisrupted() || !isPlayerOwned() || constructionCancelled
+                || AoTDToolboxMisc.isStoryCriticalStructure(currentlyAssignedToken)
                 || ultimateUpgradeId != null) return false;
         LinkedList<String> path = AoTDStableStructureSpecManager.getUpgradePath(id, ultimateTargetId);
         if (path.isEmpty()) return false;

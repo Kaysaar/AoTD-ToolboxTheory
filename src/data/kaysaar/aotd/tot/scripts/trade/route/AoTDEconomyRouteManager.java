@@ -35,7 +35,6 @@ public class AoTDEconomyRouteManager extends EconomyFleetRouteManager {
     private transient int attempts, noSource, noDestination, emptyCargo, simulatedLosses;
     private transient int routesCreated, fleetsSpawned, failedSpawns;
 
-    /** Keep the saved manager (and its cooldowns); repair saves where it is absent. */
     public static void install() {
         boolean installed = false;
         for (com.fs.starfarer.api.EveryFrameScript script :

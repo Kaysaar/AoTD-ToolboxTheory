@@ -35,7 +35,8 @@ public class AoTDSystemStructureColonizationListener implements PlayerColonizati
 
         int claimed = 0;
         for (SectorEntityToken token : system.getAllEntities()) {
-            if (token.isExpired() || token.getFaction() == null
+            if (token.isExpired() || AoTDToolboxMisc.shouldIgnoreSystemStructure(token)
+                    || token.getFaction() == null
                     || AoTDToolboxMisc.isSystemStableLocation(token)) continue;
 
             String factionId = token.getFaction().getId();

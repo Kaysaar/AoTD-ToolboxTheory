@@ -326,6 +326,7 @@ public class AoTDToolboxTheoryPlugin extends BaseModPlugin implements MarketCont
         econ2.runMarketAdjustmentAfterEconomyCreation();
         AoTDEconomy.runningPrePlayerEconomy = true;
         AoTDEconomyRouteManager.install();
+        Global.getSector().registerPlugin(new AoTDCoreImplPlugin());
 
     }
 
@@ -386,6 +387,7 @@ public class AoTDToolboxTheoryPlugin extends BaseModPlugin implements MarketCont
     public void onGameLoad(boolean newGame) {
         AoTDEconomyRouteManager.install();
         AoTDStableStructureAdvanceScript.install();
+
         if (newGame) {
             Set<String> missingStructureSpecs = new LinkedHashSet<>();
             for (StarSystemAPI systemsWithPlayerColony : getSystemsWithColonies()) {

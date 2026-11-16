@@ -80,7 +80,7 @@ public class AoTDToolboxMisc {
         LinkedHashSet<SectorEntityToken> available = new LinkedHashSet<>();
         LinkedHashSet<SectorEntityToken> occupied = new LinkedHashSet<>();
         for (SectorEntityToken token : system.getAllEntities()) {
-            if (token.isExpired()) continue;
+            if (token.isExpired() || shouldIgnoreSystemStructure(token)) continue;
             if (isSystemStableLocation(token)) {
                 available.add(token);
             } else if (isSystemStructure(token)) {
@@ -148,13 +148,32 @@ public class AoTDToolboxMisc {
         return stat;
     }
 
+    /** A story-critical entity is not player-manageable, even if registered in ToT. */
+    public static boolean isStoryCriticalStructure(SectorEntityToken token) {
+        return token != null && token.hasTag(AoTDTags.STORY_CRITICAL);
+    }
+
+    /** The custom exclusion is active only with BOTH ToT tags. */
+    public static boolean hasIgnoreSystemStructuresTag(SectorEntityToken token) {
+        return token != null
+                && token.hasTag(AoTDTags.AOTD_OBJECTIVE)
+                && token.hasTag(AoTDTags.AOTD_IGNORE_SYSTEM_STRUCTURES);
+    }
+
+    /** Never consume structure capacity or stable points for protected entities. */
+    public static boolean shouldIgnoreSystemStructure(SectorEntityToken token) {
+        return isStoryCriticalStructure(token) || hasIgnoreSystemStructuresTag(token);
+    }
+
     public static boolean isSystemStableLocation(SectorEntityToken token) {
-        return token != null && (AoTDStableStructureConstruction.isStablePoint(token)
+        return token != null && !shouldIgnoreSystemStructure(token)
+                && (AoTDStableStructureConstruction.isStablePoint(token)
                 || token.hasTag(AoTDTags.AOTD_STABLE_LOCATION) || token.hasTag(Tags.STABLE_LOCATION));
     }
 
     public static boolean isSystemStructure(SectorEntityToken token) {
-        if (token == null || token.isExpired() || isSystemStableLocation(token)
+        if (token == null || token.isExpired() || shouldIgnoreSystemStructure(token)
+                || isSystemStableLocation(token)
                 || AoTDStableStructureConstruction.OVERLAY.equals(token.getCustomEntityType())) return false;
         return token.hasTag(AoTDTags.AOTD_OBJECTIVE) || token.hasTag(Tags.OBJECTIVE)
                 || AoTDStableStructureConstruction.SCAFFOLD.equals(token.getCustomEntityType())

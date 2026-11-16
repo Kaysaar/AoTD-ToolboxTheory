@@ -8,6 +8,7 @@ import com.fs.starfarer.api.ui.CustomPanelAPI;
 import com.fs.starfarer.api.ui.TooltipMakerAPI;
 import com.fs.starfarer.api.util.Misc;
 import data.kaysaar.aotd.tot.stablestructures.AoTDStableStructureConstruction;
+import data.kaysaar.aotd.tot.misc.AoTDToolboxMisc;
 import data.kaysaar.aotd.tot.stablestructures.AoTDStableStructureImpl;
 import data.kaysaar.aotd.tot.stablestructures.AoTDStableStructureSpec;
 import data.kaysaar.aotd.tot.stablestructures.AoTDStableStructureSpecManager;
@@ -85,7 +86,8 @@ public class StableStructureWidgetButtons extends InstantPopUpUI {
         upgradeTargets.clear();
 
         AoTDStableStructureImpl impl = widget.getStructure();
-        if (impl == null || !impl.isCurrentImplementation() || !impl.isPlayerOwned()) return options;
+        if (impl == null || !impl.isCurrentImplementation() || !impl.isPlayerOwned()
+                || AoTDToolboxMisc.isStoryCriticalStructure(impl.getCurrentlyTiedEntity())) return options;
 
         if (impl.canMountAICores()) {
             options.put(AI_CORE, "Assign AI Core...");
@@ -130,6 +132,7 @@ public class StableStructureWidgetButtons extends InstantPopUpUI {
     private boolean canSelectUpgrade(AoTDStableStructureImpl current, AoTDStableStructureImpl target) {
         return current != null && target != null
                 && current.isCurrentImplementation() && current.isPlayerOwned()
+                && !AoTDToolboxMisc.isStoryCriticalStructure(current.getCurrentlyTiedEntity())
                 && !current.isBuilding() && !current.isDisrupted()
                 && current.getCurrentlyTiedEntity() != null
                 && Global.getSector().getPlayerFleet().getCargo().getCredits().get()
@@ -278,6 +281,13 @@ public class StableStructureWidgetButtons extends InstantPopUpUI {
     public void advance(float amount) {
         super.advance(amount);
         if (!reachedMaxHeight) return;
+
+        // Also protect a popup opened before story_critical was added.
+        AoTDStableStructureImpl active = widget.getStructure();
+        if (active == null || AoTDToolboxMisc.isStoryCriticalStructure(active.getCurrentlyTiedEntity())) {
+            forceDismiss();
+            return;
+        }
 
         for (Map.Entry<String, BetterAreaCheckbox> entry : buttons.entrySet()) {
             String action = entry.getKey();
