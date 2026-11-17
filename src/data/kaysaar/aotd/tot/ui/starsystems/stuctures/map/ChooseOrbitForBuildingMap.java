@@ -28,7 +28,6 @@ public class ChooseOrbitForBuildingMap extends MapMainComponent implements Struc
     @Override
     protected void afterAddOrbits() {
         orbitComponent = new ChooseOrbitConstructionComponent(0f,this,customEntitySpecId);
-        getMapZoom().addComponent(orbitComponent,27000,27000);
 
     }
     @Override
@@ -60,6 +59,8 @@ public class ChooseOrbitForBuildingMap extends MapMainComponent implements Struc
     @Override
     protected void afterFinalize() {
         getPointer().setCanRender(false);
+        // Render the orbit preview after terrain, asteroids and other map entities.
+        getMapZoom().addComponent(orbitComponent, WORLD_X, WORLD_X);
     }
 
     public ChooseOrbitConstructionComponent getOrbitComponent() {
@@ -117,7 +118,7 @@ public class ChooseOrbitForBuildingMap extends MapMainComponent implements Struc
             tooltip.addPara("Select an orbit focus, then click on the map to place the structure preview. Press %s to clear.",0f,Color.ORANGE,"D");
         }
         else{
-            tooltip.addPara("Orbit focus: %s. Radius: %s.",0f,Color.ORANGE,getSelectedEntity().getName(),""+Math.round(orbitComponent.getSavedRadiusWorld()));
+            tooltip.addPara("Orbit focus: %s.",0f,Color.ORANGE,getSelectedEntity().getName(),""+Math.round(orbitComponent.getSavedRadiusWorld()));
         }
     }
 }

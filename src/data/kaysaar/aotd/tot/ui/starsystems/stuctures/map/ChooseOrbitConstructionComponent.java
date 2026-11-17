@@ -17,12 +17,29 @@ public class ChooseOrbitConstructionComponent extends MapOrbitRenderer {
     private MapEntityComponent currentlyCenteredAround;
     private final MapMainComponent mainComponent;
 
-    // --- Gate sprite ---
+
     private  SpriteAPI gateSprite;
     private  float spriteW, spriteH;
 
 
-    private float spriteAngleOffsetDeg = 0f;
+    private boolean clampPlanetOrbitRadius = true;
+    private Float minOrbitRadiusWorld;
+    private Float maxOrbitRadiusWorld;
+
+    /** Optional world-space orbit limits for pickers with a permitted radial band. */
+    public void setOrbitRadiusLimits(float min, float max) {
+        minOrbitRadiusWorld = Math.max(0f, min);
+        maxOrbitRadiusWorld = Math.max(minOrbitRadiusWorld, max);
+    }
+
+    public void clearOrbitRadiusLimits() {
+        minOrbitRadiusWorld = null;
+        maxOrbitRadiusWorld = null;
+    }
+
+    public void setClampPlanetOrbitRadius(boolean clampPlanetOrbitRadius) {
+        this.clampPlanetOrbitRadius = clampPlanetOrbitRadius;
+    }
 
     // --- Follow lock state ---
     private boolean followLocked = false;
@@ -58,11 +75,9 @@ public class ChooseOrbitConstructionComponent extends MapOrbitRenderer {
         this.currentlyCenteredAround = center;
     }
 
-    /**
-     * If your sprite's "forward" isn't +X, adjust with a small offset (degrees).
-     */
-    public void setSpriteAngleOffsetDeg(float spriteAngleOffsetDeg) {
-        this.spriteAngleOffsetDeg = spriteAngleOffsetDeg;
+    /** Legacy offset used by older callers; ignored for pointing-down orbits. */
+    @Deprecated
+    public void setSpriteAngleOffsetDeg(float unused) {
     }
 
     public boolean isLocked() {
@@ -89,7 +104,7 @@ public class ChooseOrbitConstructionComponent extends MapOrbitRenderer {
     }
 
     /**
-     * Freeze gate at current follower position (stores angle in UI-space, radius in world-space).
+     * Freeze the selection (stores angle and radius in world-space).
      */
     public void lockToCurrentFollower() {
         if (currentlyCenteredAround == null) return;
@@ -99,12 +114,15 @@ public class ChooseOrbitConstructionComponent extends MapOrbitRenderer {
         float fxUI = mainComponent.getFollower().getComponentPanel().getPosition().getCenterX();
         float fyUI = mainComponent.getFollower().getComponentPanel().getPosition().getCenterY();
 
-        // Angle in UI space (no Y flip)
+        // PositionAPI coordinates are bottom-left based, just like campaign/GL coordinates.
+        // Store the world-space angle directly; do not flip the Y direction.
         savedGateAngleRad = (float) Math.atan2(fyUI - cyUI, fxUI - cxUI);
 
         // Keep radius in WORLD units so it’s robust to zoom changes
         float radiusUI = Misc.getDistance(new Vector2f(cxUI, cyUI), new Vector2f(fxUI, fyUI));
         savedRadiusWorld = radiusUI / Math.max(1e-6f, scale);
+        if (minOrbitRadiusWorld != null) savedRadiusWorld = Math.max(savedRadiusWorld, minOrbitRadiusWorld);
+        if (maxOrbitRadiusWorld != null) savedRadiusWorld = Math.min(savedRadiusWorld, maxOrbitRadiusWorld);
         savedCordsOfGate = mainComponent.getMapZoom().calculateMouseToWorldCords();
         followLocked = true;
     }
@@ -142,7 +160,7 @@ public class ChooseOrbitConstructionComponent extends MapOrbitRenderer {
         }
 
         // Clamp for planets/stars like your original logic
-        if (currentlyCenteredAround.getToken() instanceof PlanetAPI planet) {
+        if (clampPlanetOrbitRadius && currentlyCenteredAround.getToken() instanceof PlanetAPI planet) {
             if (!planet.isStar() && !planet.isBlackHole()) {
                 radiusUI = Math.max((currentlyCenteredAround.getToken().getRadius() * 1.5f) * scale, radiusUI);
                 radiusUI = Math.min((currentlyCenteredAround.getToken().getRadius() * 3.0f) * scale, radiusUI);
@@ -151,6 +169,8 @@ public class ChooseOrbitConstructionComponent extends MapOrbitRenderer {
                 radiusUI = Math.min(25000f * scale, radiusUI);
             }
         }
+        if (minOrbitRadiusWorld != null) radiusUI = Math.max(radiusUI, minOrbitRadiusWorld * scale);
+        if (maxOrbitRadiusWorld != null) radiusUI = Math.min(radiusUI, maxOrbitRadiusWorld * scale);
         if (radiusUI <= 0f) return;
 
         // --- Orbit line (UI) ---
@@ -186,14 +206,15 @@ public class ChooseOrbitConstructionComponent extends MapOrbitRenderer {
         }
 
         // --- Gate placement (UI) ---
-        // Use UI-space angle so "down" in UI produces a gate drawn at the bottom.
+        // PositionAPI's center coordinates and SpriteAPI.renderAtCenter both use
+        // bottom-left origins. Use the same world-space angle for selection and preview.
         float angleRadToUse;
         if (followLocked && savedGateAngleRad != null) {
-            angleRadToUse = savedGateAngleRad;          // already UI-space
+            angleRadToUse = savedGateAngleRad;
         } else {
             float fxUI = mainComponent.getFollower().getComponentPanel().getPosition().getCenterX();
             float fyUI = mainComponent.getFollower().getComponentPanel().getPosition().getCenterY();
-            angleRadToUse = (float) Math.atan2(fyUI - cyUI, fxUI - cxUI); // UI space
+            angleRadToUse = (float) Math.atan2(fyUI - cyUI, fxUI - cxUI);
         }
 
         float cos = (float) Math.cos(angleRadToUse);
@@ -201,8 +222,10 @@ public class ChooseOrbitConstructionComponent extends MapOrbitRenderer {
         float px = cxUI + cos * radiusUI;
         float py = cyUI + sin * radiusUI;
 
-        // Face center:
-        float faceCenterDeg = (float) Math.toDegrees(angleRadToUse) + 180f + spriteAngleOffsetDeg;
+        // Vanilla campaign entity rendering uses sprite.setAngle(facing - 90f).
+        // A pointing-down orbit faces radially outward (bottom toward the focus).
+        // Thus, the preview's SpriteAPI angle is orbitAngle - 90 degrees.
+        float faceCenterDeg = (float) Math.toDegrees(angleRadToUse) - 90f;
         if (isLocked()) {
             savedRadiusWorld = radiusUI / scale;
             gateSprite.setSize(spriteW * scale, spriteH * scale);
