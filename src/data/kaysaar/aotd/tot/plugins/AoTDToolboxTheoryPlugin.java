@@ -133,6 +133,7 @@ public class AoTDToolboxTheoryPlugin extends BaseModPlugin implements MarketCont
         CivilianSupplyProgram creatorAPI4 = new CivilianSupplyProgram();
         AoTDPlayerContractCreatorManager.addCreator(creatorAPI4.getBaseIdForContract(), creatorAPI4);
         AoTDStableStructureSpecManager.init();
+        data.kaysaar.aotd.tot.recipes.AoTDIndustryRecipeManager.getInstance().init();
 
     }
 

@@ -29,6 +29,12 @@ public class AoTDIndustryRecipePlugin {
     public void onInit() { }
     public boolean canBeUsed(Industry industry) { return true; }
     public boolean isVisibleInListOfRecipes(Industry industry) { return true; }
+    /** Plain description used by the reusable production-plan browser. */
+    public String getDescription(Industry industry) { return ""; }
+    /** Override with the actual missing research, condition, item, or other requirement. */
+    public String getUnavailableReason(Industry industry) {
+        return "This industry does not meet this production plan's requirements.";
+    }
     public Color getNameColor() { return Misc.getTextColor(); }
     public void addOnHoverTooltip(TooltipMakerAPI tooltip, Industry industry, int marketSize) { }
 
@@ -88,3 +94,4 @@ public class AoTDIndustryRecipePlugin {
         }
     }
 }
+

@@ -57,6 +57,18 @@ public class AoTDCommodityShortPanel implements ExtendedUIPanelPlugin {
         mainPanel = Global.getSettings().createCustom(width,height,this);
         createUI();
     }
+    // Compact table cells can use a smaller icon without changing existing panels.
+    public AoTDCommodityShortPanel(String commodityId, int number, Color textColor, float width,
+                                  float cellHeight, boolean demandMode, boolean shortMode) {
+        this.commodityId = commodityId;
+        this.number = number;
+        this.textColor = textColor;
+        this.width = width;
+        this.demandMode = demandMode;
+        this.shortMode = shortMode;
+        mainPanel = Global.getSettings().createCustom(width, cellHeight, this);
+        createUI();
+    }
     public AoTDCommodityShortPanel(String commodityId, int number, Color textColor, float width, Industry market,boolean demandMode,boolean ignoreDeficit) {
         this.commodityId = commodityId;
         this.number = number;
@@ -161,6 +173,7 @@ public class AoTDCommodityShortPanel implements ExtendedUIPanelPlugin {
 
         float iconSize = componentPanel.getPosition().getHeight();
         float tooltipW = componentPanel.getPosition().getWidth() - iconSize - 5f;
+        float textPad = Math.max(0f, (iconSize - 14f) / 2f);
 
         TooltipMakerAPI tooltip = componentPanel.createUIElement(tooltipW, iconSize, false);
         CommoditySpecAPI spec = Global.getSettings().getCommoditySpec(commodityId);
@@ -169,7 +182,8 @@ public class AoTDCommodityShortPanel implements ExtendedUIPanelPlugin {
         componentPanel.addComponent(viewer.getComponentPanel()).inTL(0, 0);
 
         if (!demandMode) {
-            tooltip.addPara(AoTDToolboxMisc.getDGSStringWithSign(number), textColor, 13f).setAlignment(al);
+            tooltip.addPara(shortMode ? (number > 0 ? "+" : "") + fmt(number)
+                    : AoTDToolboxMisc.getDGSStringWithSign(number), textColor, textPad).setAlignment(al);
 
         } else if (market instanceof AoTDBaseIndustry ind) {
             int deficit = ignoreDeficit ? 0 : ind.getDeficitExact(commodityId);
@@ -212,7 +226,7 @@ public class AoTDCommodityShortPanel implements ExtendedUIPanelPlugin {
             }
 
         } else {
-            tooltip.addPara(fmt(number), textColor, 13f).setAlignment(al);
+            tooltip.addPara(fmt(number), textColor, textPad).setAlignment(al);
         }
 
         componentPanel.addUIElement(tooltip).inTL(iconSize + 5f, 0);

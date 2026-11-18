@@ -18,6 +18,7 @@ public class AoTDPreviewMarket {
 
     public static MarketAPI createMarket() {
         MarketAPI market = Global.getFactory().createMarket("to_delete", "TEst", 6);
+        market.addCondition("aotd_toolbox_food_corrector_start");
         market.addCondition(Conditions.FARMLAND_ADEQUATE);
         market.addCondition(Conditions.ORE_MODERATE);
         market.addCondition(Conditions.RARE_ORE_MODERATE);
@@ -35,12 +36,14 @@ public class AoTDPreviewMarket {
         }
 
         market.setFactionId(Global.getSector().getPlayerFaction().getId());
+        market.addCondition("aotd_toolbox_food_corrector");
         market.reapplyConditions();
         market.setFreePort(true);
 
         for (CommodityOnMarketAPI commodity : market.getAllCommodities()) {
             commodity.getAvailableStat().addTemporaryModFlat(10000, "src", 30);
         }
+        market.getConditions().forEach(x->x.setSurveyed(true));
         market.setUseStockpilesForShortages(true);
         return market;
     }

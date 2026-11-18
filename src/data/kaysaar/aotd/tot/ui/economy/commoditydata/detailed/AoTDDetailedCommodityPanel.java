@@ -3,6 +3,7 @@ package data.kaysaar.aotd.tot.ui.economy.commoditydata.detailed;
 import ashlib.data.plugins.misc.AshMisc;
 import ashlib.data.plugins.ui.models.ExtendedUIPanelPlugin;
 import ashlib.data.plugins.ui.models.resizable.ImageViewer;
+import ashlib.data.plugins.ui.plugins.UILinesRenderer;
 import com.fs.starfarer.api.Global;
 import com.fs.starfarer.api.campaign.FactionAPI;
 import com.fs.starfarer.api.campaign.econ.CommoditySpecAPI;
@@ -30,9 +31,11 @@ public class AoTDDetailedCommodityPanel implements ExtendedUIPanelPlugin {
     CustomPanelAPI contentPanel;
     String commodityId, factionId;
     ButtonAPI checkSectorCurrentEconomyData;
-
+    UILinesRenderer renderer;
     public AoTDDetailedCommodityPanel(float width, float height, String commodityId, String factionId) {
         mainPanel = Global.getSettings().createCustom(width, height, this);
+        renderer = new UILinesRenderer(0f);
+        renderer.setPanel(mainPanel);
         this.commodityId = commodityId;
         this.factionId = factionId;
         createUI();
@@ -287,7 +290,7 @@ public class AoTDDetailedCommodityPanel implements ExtendedUIPanelPlugin {
 
     @Override
     public void renderBelow(float alphaMult) {
-
+        renderer.render(alphaMult);
     }
 
     @Override

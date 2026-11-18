@@ -19,6 +19,7 @@ import data.kaysaar.aotd.tot.ui.economy.EconomyFactionIncome;
 import data.kaysaar.aotd.tot.ui.economy.EconomyTradeDealsData;
 import data.kaysaar.aotd.tot.ui.starsystems.StarSystemHoldingsUI;
 import data.kaysaar.aotd.tot.ui.warehouses.WarehouseSectionUI;
+import data.kaysaar.aotd.tot.ui.production.ProductionLinesUI;
 import org.lwjgl.input.Keyboard;
 
 import java.awt.*;
@@ -32,6 +33,7 @@ public class DomainUIPanel extends CommandUIPlugin {
     EconomyTradeDealsData economyTradeDealsData;
     EconomyFactionIncome factionIncome;
     WarehouseSectionUI warehouseSectionUI;
+    ProductionLinesUI productionLinesUI;
     public static boolean sentSignalForUpdate = false;
 
     public DomainUIPanel(float width, float height) {
@@ -153,6 +155,7 @@ public class DomainUIPanel extends CommandUIPlugin {
 
         commData = buttonTooltip.addButton("Commodity Data", null, base, bg, Alignment.MID, CutStyle.TOP, 150, 20, 0f);
         tradeData = buttonTooltip.addButton("Shipping & Convoys", null, base, bg, Alignment.MID, CutStyle.TOP, 170, 20, 0f);
+        ButtonAPI productionLines = buttonTooltip.addButton("Production Lines", null, base, bg, Alignment.MID, CutStyle.TOP, 160, 20, 0f);
 
         commData.setShortcut(Keyboard.KEY_T, false);
         tradeData.setShortcut(Keyboard.KEY_Y, false);
@@ -160,15 +163,23 @@ public class DomainUIPanel extends CommandUIPlugin {
         customProd.setShortcut(Keyboard.KEY_Q, false);
         customProd.getPosition().inTL(0, 0);
 
+        productionLines.setShortcut(Keyboard.KEY_S,false);
+
         research.setShortcut(Keyboard.KEY_R, false);
         research.getPosition().rightOfMid(customProd,1);
         commData.getPosition().rightOfMid(research,1);
         tradeData.getPosition().rightOfMid(commData,1);
+        productionLines.getPosition().rightOfMid(tradeData,1);
 
         insertStarSystemPanel(customProd);
         insertCommDataPanel(commData);
         insertTradeDataPanel(tradeData);
         insertWarehouseUI(research);
+        if (productionLinesUI == null) {
+            productionLinesUI = new ProductionLinesUI(panelForPlugins.getPosition().getWidth() - 5,
+                    panelForPlugins.getPosition().getHeight());
+        }
+        panelMap.put(productionLines, productionLinesUI.getMainPanel());
         buttonPanel.addUIElement(buttonTooltip).inTL(0, 0);
         buttonPanel.addComponent(panelHelper).inTL(0, 20);
         mainPanel.addComponent(buttonPanel).inTL(0, 10);

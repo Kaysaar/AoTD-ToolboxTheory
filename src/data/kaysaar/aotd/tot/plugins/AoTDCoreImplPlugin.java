@@ -10,10 +10,12 @@ import com.fs.starfarer.api.impl.campaign.PlanetInteractionDialogPluginImpl;
 public class AoTDCoreImplPlugin extends CoreCampaignPluginImpl {
     @Override
     public PluginPick<InteractionDialogPlugin> pickInteractionDialogPlugin(SectorEntityToken interactionTarget) {
-        if (interactionTarget instanceof PlanetAPI) {
+        PluginPick<InteractionDialogPlugin> pluginPluginPick =  super.pickInteractionDialogPlugin(interactionTarget);
+        if(pluginPluginPick==null||pluginPluginPick.plugin==null)return null;
+        if (pluginPluginPick.plugin instanceof PlanetInteractionDialogPluginImpl ) {
             return new PluginPick<InteractionDialogPlugin>(new AoTDPlanetInteractionDialogPluginImpl(), PickPriority.MOD_GENERAL);
         }
-        return super.pickInteractionDialogPlugin(interactionTarget);
+        return pluginPluginPick;
     }
 
     @Override
