@@ -1,5 +1,8 @@
 package data.kaysaar.aotd.tot.ui.industry;
 
+import data.kaysaar.aotd.tot.conditions.AoTDRecipeCondition;
+import data.kaysaar.aotd.tot.recipes.AoTDIndustryRecipeManager;
+import data.kaysaar.aotd.tot.recipes.AoTDIndustryRecipePlugin;
 import ashlib.data.plugins.ui.models.ExtendedUIPanelPlugin;
 import com.fs.starfarer.api.Global;
 import com.fs.starfarer.api.campaign.econ.CommodityOnMarketAPI;
@@ -73,6 +76,14 @@ public class IndustryOnHoverTooltipV2 implements ExtendedUIPanelPlugin {
         boolean isAoTD = ind instanceof AoTDBaseIndustry;
 
         TooltipMakerAPI result = mainPanel.createUIElement(width, 10000f, false);
+        AoTDIndustryRecipePlugin recipe = AoTDIndustryRecipeManager.getInstance().getActiveRecipe(ind);
+        if (recipe != null && recipe.doesFullyOverrideIndustry()) {
+            recipe.createTooltipForIndustry(ind, mode, result, expanded, width, ignoreDeficits);
+            mainPanel.getPosition().setSize(width, Math.max(1f, result.getHeightSoFar()));
+            mainPanel.addUIElement(result).inTL(0f, 0f);
+            tl = result;
+            return;
+        }
         TooltipMakerAPI original = mainPanel.createUIElement(width, 100000f, true);
 
         boolean needToAddIndustry = false;
@@ -84,7 +95,7 @@ public class IndustryOnHoverTooltipV2 implements ExtendedUIPanelPlugin {
 
             for (Industry industry : ind.getMarket().getIndustries()) {
                 if (!AoTDIndustryData.getInstance(industry.getMarket()).isPending(industry.getId())) {
-                    industry.reapply();
+                    AoTDRecipeCondition.reapplyIndustry(industry);
                 }
             }
 
@@ -185,6 +196,16 @@ public class IndustryOnHoverTooltipV2 implements ExtendedUIPanelPlugin {
                 i++;
             }
 
+            if (recipe != null) {
+                TooltipMakerAPI effects = mainPanel.createUIElement(width, 10000f, false);
+                recipe.createTooltipForIndustry(ind, mode, effects, expanded, width, ignoreDeficits);
+                if (effects.getHeightSoFar() > 0f) {
+                    float sectionHeight = effects.getHeightSoFar();
+                    effects.getPosition().setSize(width, sectionHeight);
+                    result.addCustom(effects, 0f).getPosition().inTL(0f, totalHeight);
+                    totalHeight += sectionHeight;
+                }
+            }
             mainPanel.getPosition().setSize(width, Math.max(1f, totalHeight));
             mainPanel.addUIElement(result).inTL(0f, 0f);
             tl = result;

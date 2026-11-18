@@ -5,11 +5,66 @@ import com.fs.starfarer.api.campaign.econ.MarketAPI;
 import com.fs.starfarer.api.impl.campaign.econ.impl.BaseIndustry;
 
 import java.util.LinkedHashMap;
+import data.kaysaar.aotd.tot.conditions.AoTDRecipeCondition;
 import java.util.Map;
+import java.util.ArrayList;
 
 public class AoTDIndustryRecipeLocalManager {
 
     private MarketAPI market;
+    private Map<String, Industry> owners = new LinkedHashMap<>();
+
+    private Map<String, Industry> owners() {
+        if (owners == null) owners = new LinkedHashMap<>();
+        return owners;
+    }
+
+    public boolean hasAssignments() { return !industryRecipes.isEmpty(); }
+
+    private void clearEffects(String id, Industry owner) {
+        AoTDIndustryRecipePlugin recipe = getActiveRecipe(id);
+        if (recipe == null) return;
+        if (owner instanceof BaseIndustry base) recipe.unapply(base);
+        recipe.unapplyMarketEffects(market, id);
+    }
+
+    private void removeEffects(String id, Industry owner) {
+        clearEffects(id, owner);
+        AoTDIndustryRecipePlugin recipe = getActiveRecipe(id);
+        if (recipe != null && owner instanceof BaseIndustry base) recipe.onRecipeRemoved(base);
+    }
+
+    public void reconcile(boolean applying) {
+        for (String id : new ArrayList<>(industryRecipes.keySet())) {
+            Industry current = market.getIndustry(id);
+            Industry owner = owners().get(id);
+            if (current == null || (owner != null && current != owner)) {
+                removeEffects(id, owner);
+                owners().remove(id);
+                industryRecipes.remove(id);
+                recipePlugins.remove(id);
+                continue;
+            }
+            owners().put(id, current);
+            if (AoTDIndustryRecipePlugin.supportsDirectRecipes(current)) continue;
+            if (applying) applyIndirect(current);
+            else clearEffects(id, current);
+        }
+    }
+
+    public void applyIndirect(Industry industry) {
+        if (market.getIndustry(industry.getId()) != industry || AoTDIndustryRecipePlugin.supportsDirectRecipes(industry)) return;
+        AoTDIndustryRecipePlugin recipe = getActiveRecipe(industry);
+        if (recipe == null) return;
+        if (recipe.doesFullyOverrideIndustry()) recipe.cancelIndustryEffects(industry);
+        if (!industry.isFunctional()) {
+            clearEffects(industry.getId(), industry);
+            return;
+        }
+        if (industry instanceof BaseIndustry base) recipe.applyRecipeToIndustry(base);
+        recipe.applyMarketEffects(market, industry.getId());
+    }
+
     private LinkedHashMap<String, String> industryRecipes = new LinkedHashMap<>();
     private transient LinkedHashMap<String, AoTDIndustryRecipePlugin> recipePlugins = new LinkedHashMap<>();
 
@@ -31,12 +86,23 @@ public class AoTDIndustryRecipeLocalManager {
         recipePlugins.put(industryId, recipe);
         return recipe;
     }
-    public AoTDIndustryRecipePlugin getActiveRecipe(Industry industry) { return getActiveRecipe(industry.getId()); }
+    public AoTDIndustryRecipePlugin getActiveRecipe(Industry industry) {
+        Industry owner = owners().get(industry.getId());
+        return owner == null || owner == industry ? getActiveRecipe(industry.getId()) : null;
+    }
 
     public boolean setActiveRecipe(Industry industry, String recipeId) {
         if (industry.getMarket() != market) return false;
         if (recipePlugins == null) recipePlugins = new LinkedHashMap<>();
         String industryId = industry.getId();
+        Industry previousOwner = owners().get(industryId);
+        if (previousOwner != null && previousOwner != industry) {
+            if (market.getIndustry(industryId) != industry) return false;
+            removeEffects(industryId, previousOwner);
+            owners().remove(industryId);
+            industryRecipes.remove(industryId);
+            recipePlugins.remove(industryId);
+        }
         if (recipeId != null) {
             recipeId = recipeId.trim();
             if (recipeId.isEmpty()) recipeId = null;
@@ -50,15 +116,17 @@ public class AoTDIndustryRecipeLocalManager {
             if (next == null || !industryId.equals(next.getIndustryTiedTo()) || !next.canBeUsed(industry)) return false;
         }
 
-        AoTDIndustryRecipePlugin previous = getActiveRecipe(industryId);
-        if (previous != null && industry instanceof BaseIndustry) previous.unapply((BaseIndustry) industry);
+        removeEffects(industryId, owners().getOrDefault(industryId, industry));
 
         if (next == null) {
+            owners().remove(industryId);
             industryRecipes.remove(industryId);
             recipePlugins.remove(industryId);
         } else {
             industryRecipes.put(industryId, recipeId);
             recipePlugins.put(industryId, next);
+            owners().put(industryId, industry);
+            AoTDRecipeCondition.ensure(market);
         }
         return true;
     }

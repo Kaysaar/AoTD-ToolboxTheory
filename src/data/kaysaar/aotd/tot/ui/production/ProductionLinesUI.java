@@ -17,8 +17,6 @@ public class ProductionLinesUI implements ExtendedUIPanelPlugin {
     public IndustryPlanDetails details;
     public ProductionLineActions actions;
     String selectedIndustry;
-    String lastActionResult;
-    AoTDProductionLineManager.ApplicationReport lastApplicationReport;
     boolean refreshRequested;
 
     public void requestRefresh() { refreshRequested = true; }

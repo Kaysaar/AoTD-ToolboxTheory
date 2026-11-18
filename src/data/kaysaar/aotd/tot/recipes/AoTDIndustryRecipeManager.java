@@ -77,8 +77,14 @@ public class AoTDIndustryRecipeManager {
         }
     }
 
+    public static AoTDIndustryRecipeLocalManager findLocalManager(MarketAPI market) {
+        Object value = market.getMemoryWithoutUpdate().get(LOCAL_MEMORY_KEY);
+        if (value instanceof AoTDIndustryRecipeLocalManager local && local.getMarket() == market) return local;
+        return null;
+    }
+
     public AoTDIndustryRecipeLocalManager getLocalManager(MarketAPI market) {
-        MemoryAPI memory = market.getMemory();
+        MemoryAPI memory = market.getMemoryWithoutUpdate();
         Object saved = memory.get(LOCAL_MEMORY_KEY);
         if (saved instanceof AoTDIndustryRecipeLocalManager) {
             return (AoTDIndustryRecipeLocalManager) saved;
@@ -93,9 +99,11 @@ public class AoTDIndustryRecipeManager {
     }
 
     public AoTDIndustryRecipePlugin getActiveRecipe(Industry industry) {
-        Object saved = industry.getMarket().getMemory().get(LOCAL_MEMORY_KEY);
+        Object saved = industry.getMarket().getMemoryWithoutUpdate().get(LOCAL_MEMORY_KEY);
         if (!(saved instanceof AoTDIndustryRecipeLocalManager)) return null;
-        return ((AoTDIndustryRecipeLocalManager) saved).getActiveRecipe(industry);
+        AoTDIndustryRecipeLocalManager local = (AoTDIndustryRecipeLocalManager) saved;
+        return local.getMarket() == industry.getMarket() && industry.getMarket().getIndustry(industry.getId()) == industry
+                ? local.getActiveRecipe(industry) : null;
     }
 
     public void forgetIndustry(Industry industry) {

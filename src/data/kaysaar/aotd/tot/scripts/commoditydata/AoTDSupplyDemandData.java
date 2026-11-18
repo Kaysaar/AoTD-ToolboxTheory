@@ -525,7 +525,11 @@ public class AoTDSupplyDemandData {
         return demand;
     }
 
+    // Only set while the monthly trade allocator is settling already-produced goods.
+    transient Integer collectedSupply;
+
     public int getTotalRawUnitsFromSupply() {
+        if (collectedSupply != null) return collectedSupply;
         return supply + getTotalRawAdditionalProduction(null);
     }
 

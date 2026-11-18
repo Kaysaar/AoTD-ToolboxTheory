@@ -3,14 +3,15 @@ package data.kaysaar.aotd.tot.ui.production;
 import ashlib.data.plugins.ui.models.BasePopUpDialog;
 import com.fs.starfarer.api.ui.*;
 import com.fs.starfarer.api.util.Misc;
-import data.kaysaar.aotd.tot.recipes.AoTDProductionLineManager.ApplicationReport;
+import data.kaysaar.aotd.tot.recipes.AoTDProductionLineManager;
 
-/** Scrollable result breakdown; opening it never applies anything again. */
+
+
 public class ProductionPlanApplicationDialog extends BasePopUpDialog {
-    private final ApplicationReport report;
+    private final AoTDProductionLineManager.ApplicationReport report;
 
-    public ProductionPlanApplicationDialog(ApplicationReport report) {
-        super("Production Plans Applied");
+    public ProductionPlanApplicationDialog(AoTDProductionLineManager.ApplicationReport report) {
+        super(report.applied ? "Production Plans Applied" : "Production Plans Queued");
         this.report = report;
     }
 
@@ -18,7 +19,10 @@ public class ProductionPlanApplicationDialog extends BasePopUpDialog {
         createHeaader(panel);
         TooltipMakerAPI tooltip = panel.createUIElement(panel.getPosition().getWidth() - 30f,
                 panel.getPosition().getHeight() - y - 40f, true);
-        tooltip.addPara(report.getSummary(), Misc.getHighlightColor(), 0f);
+        if (!report.applied) {
+            tooltip.addPara("At month end, colonies collect output from their current plans, then consume inputs for the new plans. Market counts below are estimates.", 0f);
+        }
+        tooltip.addPara(report.getSummary(), Misc.getHighlightColor(), report.applied ? 0f : 10f);
         tooltip.addPara("Markets with matching industry types: " + report.examinedMarkets, 10f);
         tooltip.addSectionHeading("Markets", Alignment.MID, 16f);
         for (String detail : report.marketDetails) tooltip.addPara(detail, 8f);

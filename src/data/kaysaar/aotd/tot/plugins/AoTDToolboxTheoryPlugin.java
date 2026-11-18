@@ -1,6 +1,8 @@
 package data.kaysaar.aotd.tot.plugins;
 
 
+import data.kaysaar.aotd.tot.recipes.AoTDNewIndustryDefaults;
+import data.kaysaar.aotd.tot.conditions.AoTDRecipeCondition;
 import ashlib.data.plugins.coreui.CommandTabMemoryManager;
 import com.fs.starfarer.api.BaseModPlugin;
 import com.fs.starfarer.api.Global;
@@ -386,6 +388,7 @@ public class AoTDToolboxTheoryPlugin extends BaseModPlugin implements MarketCont
 
     @Override
     public void onGameLoad(boolean newGame) {
+        AoTDNewIndustryDefaults.install();
         AoTDEconomyRouteManager.install();
         AoTDStableStructureAdvanceScript.install();
 
@@ -432,7 +435,7 @@ public class AoTDToolboxTheoryPlugin extends BaseModPlugin implements MarketCont
                 marketAPI.reapplyConditions();
                 for (Industry industry : marketAPI.getIndustries()) {
                     if (!AoTDIndustryData.getInstance(industry.getMarket()).isPending(industry.getId())) {
-                        industry.reapply();
+                        AoTDRecipeCondition.reapplyIndustry(industry);
                     }
                 }
             }

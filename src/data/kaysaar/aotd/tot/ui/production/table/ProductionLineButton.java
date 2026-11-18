@@ -28,9 +28,10 @@ public class ProductionLineButton extends CustomButton {
     public void createButtonContent(TooltipMakerAPI tooltip) {
         CustomPanelAPI content = Global.getSettings().createCustom(width, height, null);
         float nameWidth = table.widthMap.get("name");
-         ImageViewer viewer = new ImageViewer(height*2,height-4,line.spec.getImageName());
-        content.addComponent(viewer.getComponentPanel()).inTL(2, 2);
-        addText(content, line.spec.getName(), Misc.getTooltipTitleAndLightHighlightColor(), 145f, nameWidth - 150f,null);
+        float imageHeight = Math.min(66f, (nameWidth - 4f) / 4f);
+        ImageViewer viewer = new ImageViewer(imageHeight * 2f, imageHeight, line.spec.getImageName());
+        content.addComponent(viewer.getComponentPanel()).inTL(2f, (height - imageHeight) / 2f);
+        addText(content, line.spec.getName(), Misc.getTooltipTitleAndLightHighlightColor(), imageHeight * 2f + 8f, nameWidth - imageHeight * 2f - 12f, null);
         addText(content, line.getRecipeName(), line.getRecipeColor(), table.getStartingX("recipe") + 5f,
                 table.widthMap.get("recipe") - 10f,Alignment.MID);
         addCommodities(content, line.production, "production", false);

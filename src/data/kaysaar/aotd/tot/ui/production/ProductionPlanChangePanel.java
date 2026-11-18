@@ -7,6 +7,7 @@ import ashlib.data.plugins.ui.plugins.UILinesRenderer;
 import com.fs.starfarer.api.Global;
 import com.fs.starfarer.api.campaign.econ.Industry;
 import com.fs.starfarer.api.campaign.econ.MarketAPI;
+import com.fs.starfarer.api.impl.campaign.econ.impl.BaseIndustry;
 import com.fs.starfarer.api.input.InputEventAPI;
 import com.fs.starfarer.api.loading.IndustrySpecAPI;
 import com.fs.starfarer.api.ui.*;
@@ -17,13 +18,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-/** Browse-only content: the enclosing dialog decides where to commit the selection. */
 public class ProductionPlanChangePanel implements ExtendedUIPanelPlugin {
     private final CustomPanelAPI mainPanel;
     private CustomPanelAPI contentPanel, detailsPanel;
     private final IndustrySpecAPI spec;
     private final Industry targetIndustry;
     private final String originalRecipeId;
+    private final String initialSelection;
     private final List<AoTDProductionLine> plans = new ArrayList<>();
     private AoTDProductionLine selected;
     private float tableWidth, detailsWidth;
@@ -34,7 +35,6 @@ public class ProductionPlanChangePanel implements ExtendedUIPanelPlugin {
         this(width, height, spec, currentRecipeId, null);
     }
 
-    /** A non-null industry checks requirements for that individual industry; previews remain size six. */
     public ProductionPlanChangePanel(float width, float height, IndustrySpecAPI spec,
                                      String currentRecipeId, Industry targetIndustry) {
         if (targetIndustry != null && !spec.getId().equals(targetIndustry.getId())) {
@@ -43,6 +43,7 @@ public class ProductionPlanChangePanel implements ExtendedUIPanelPlugin {
         this.spec = spec;
         this.originalRecipeId = currentRecipeId;
         this.targetIndustry = targetIndustry;
+        initialSelection = targetIndustry == null ? currentRecipeId : AoTDProductionLineManager.localSelection(targetIndustry);
         mainPanel = Global.getSettings().createCustom(width, height, this);
         plans.add(new AoTDProductionLine(spec, null));
         AoTDIndustryRecipeManager manager = AoTDIndustryRecipeManager.getInstance();
@@ -55,7 +56,7 @@ public class ProductionPlanChangePanel implements ExtendedUIPanelPlugin {
         }
         selected = plans.get(0);
         for (AoTDProductionLine plan : plans) {
-            if (Objects.equals(plan.recipeId, currentRecipeId)) selected = plan;
+            if (Objects.equals(plan.recipeId, initialSelection)) selected = plan;
         }
         createUI();
     }
@@ -71,13 +72,25 @@ public class ProductionPlanChangePanel implements ExtendedUIPanelPlugin {
         return false;
     }
 
-    public String getSelectedRecipeId() { return selected == null ? null : selected.recipeId; }
-    public boolean hasSelection() { return selected != null; }
-    public Industry getTargetIndustry() { return targetIndustry; }
-    public boolean hasChangedSelection() { return selected != null && !Objects.equals(originalRecipeId, selected.recipeId); }
-    public boolean canConfirm() { return hasChangedSelection() && getUnavailableReason() == null; }
+    public String getSelectedRecipeId() {
+        return selected == null ? null : selected.recipeId;
+    }
+    public boolean hasSelection() {
+        return selected != null;
+    }
+    public Industry getTargetIndustry() {
+        return targetIndustry;
+    }
+    public boolean hasChangedSelection() {
+        return selected != null && !Objects.equals(initialSelection, selected.recipeId);
+    }
+    public boolean canConfirm() { return getUnavailableReason() == null && (hasChangedSelection() || targetIndustry != null
+            && !AoTDProductionLineManager.hasLocalOrder(targetIndustry)
+            && !AoTDProductionLineManager.hasManualPlan(targetIndustry)); }
 
-    public String getUnavailableReason() { return unavailableReason; }
+    public String getUnavailableReason() {
+        return unavailableReason;
+    }
 
     public void refreshAvailability() {
         String previous = unavailableReason;
@@ -87,6 +100,10 @@ public class ProductionPlanChangePanel implements ExtendedUIPanelPlugin {
 
     private String computeUnavailableReason() {
         if (selected == null) return "Select a production plan.";
+        if (targetIndustry != null) {
+            if (!AoTDProductionLineManager.isLocalTarget(targetIndustry)) return "This industry is no longer under your control.";
+            if (Objects.equals(originalRecipeId, selected.recipeId)) return null;
+        }
         if (selected.recipeId == null) return null;
         AoTDIndustryRecipePlugin recipe = AoTDIndustryRecipeManager.getInstance().getRecipe(selected.recipeId);
         if (recipe == null) return "This production plan is no longer registered.";
@@ -101,14 +118,20 @@ public class ProductionPlanChangePanel implements ExtendedUIPanelPlugin {
         return reason;
     }
 
-    public void setStatus(String status) { this.status = status; createDetails(); }
-    @Override public CustomPanelAPI getMainPanel() { return mainPanel; }
+    public void setStatus(String status) {
+        this.status = status; createDetails();
+    }
+    @Override
+    public CustomPanelAPI getMainPanel() {
+        return mainPanel;
+    }
 
-    @Override public void createUI() {
+    @Override
+    public void createUI() {
         clearUI();
         float width = mainPanel.getPosition().getWidth();
         float height = mainPanel.getPosition().getHeight();
-        detailsWidth = Math.min(370f, width * 0.38f);
+        detailsWidth = ProductionPlanShowcase.BODY_WIDTH + 36f;
         tableWidth = width - detailsWidth - 16f;
         contentPanel = mainPanel.createCustomPanel(width, height, null);
         ProductionPlanTable table = new ProductionPlanTable(tableWidth, height, plans, selected, this::select);
@@ -135,61 +158,65 @@ public class ProductionPlanChangePanel implements ExtendedUIPanelPlugin {
         border.setPanel(detailsPanel);
         unavailableReason = computeUnavailableReason();
         TooltipMakerAPI tooltip = detailsPanel.createUIElement(detailsWidth - 24f, height - 16f, true);
-        tooltip.setParaFont(Fonts.ORBITRON_24AABOLD);
-        tooltip.addPara(selected.getRecipeName(), selected.getRecipeColor(), 0f).setAlignment(Alignment.MID);
-        tooltip.setParaFontDefault();
-        if (Objects.equals(originalRecipeId, selected.recipeId)) {
-            tooltip.addPara(targetIndustry == null ? "Current default plan" : "Current industry plan",
-                    Misc.getHighlightColor(), 8f).setAlignment(Alignment.MID);
-        }
-        Industry context = targetIndustry == null ? selected.industry : targetIndustry;
-        tooltip.addSectionHeading("Description", Alignment.MID, 16f);
-        if (selected.recipe == null) {
-            tooltip.addPara("Uses the industry's normal production and demand without a recipe override.", 8f);
-        } else if (context == null) {
-            tooltip.addPara("The preview context is unavailable, so this plan's description could not be loaded.",
-                    Misc.getGrayColor(), 8f);
-        } else {
-            String description = selected.recipe.getDescription(context);
-            if (description != null && !description.trim().isEmpty()) tooltip.addPara(description, 8f);
-            float before = tooltip.getHeightSoFar();
-            selected.recipe.addOnHoverTooltip(tooltip, context, 6);
-            if ((description == null || description.trim().isEmpty()) && tooltip.getHeightSoFar() == before) {
-                tooltip.addPara("No description has been provided for this plan.", Misc.getGrayColor(), 8f);
-            }
-        }
-        tooltip.addSectionHeading("Availability", Alignment.MID, 16f);
-        String reason = getUnavailableReason();
-        tooltip.addPara(reason == null ? "Available" : reason,
-                reason == null ? Misc.getPositiveHighlightColor() : Misc.getNegativeHighlightColor(), 8f);
-        if (selected.error != null) tooltip.addPara(selected.error, Misc.getNegativeHighlightColor(), 8f);
-        tooltip.addPara("Average supply and demand use a size 6 world, without additional bonuses and with all inputs supplied.",
-                Misc.getGrayColor(), 12f);
+        ProductionPlanShowcase.addTo(detailsPanel, tooltip, selected, Objects.equals(originalRecipeId, selected.recipeId));
+        String location = targetIndustry == null ? "Faction default" : targetIndustry.getMarket().getName();
+        tooltip.addSectionHeading("Plan availability", Misc.getBasePlayerColor(), Misc.getDarkPlayerColor(), Alignment.MID, 10f);
+        tooltip.addPara("%s: %s", 5f, unavailableReason == null ? Misc.getPositiveHighlightColor() : Misc.getNegativeHighlightColor(),
+                location, unavailableReason == null ? "Available" : unavailableReason);
         if (targetIndustry == null) {
             tooltip.addSectionHeading("Application preview", Alignment.MID, 16f);
             AoTDProductionLineManager.ApplicationReport impact = AoTDProductionLineManager.previewApplication(spec.getId(), selected.recipeId);
             tooltip.addPara(impact.getSummary(), 8f);
             for (String detail : impact.details) tooltip.addPara(detail, Misc.getNegativeHighlightColor(), 8f);
-            tooltip.addPara("Confirm changes the default plan only. Use Apply on all markets to update existing industries.",
+            tooltip.addPara("Confirm changes the default plan only. Use Apply on all markets to schedule existing industries for month end.",
                     Misc.getHighlightColor(), 12f);
         } else {
-            tooltip.addPara("Requirements are checked for " + targetIndustry.getMarket().getName()
-                    + ". The enclosing dialog controls when this choice is applied.", Misc.getGrayColor(), 12f);
+            if (targetIndustry instanceof BaseIndustry industry) {
+                industry.addInstalledItemsSection(Industry.IndustryTooltipMode.NORMAL, tooltip, true);
+                industry.addImprovedSection(Industry.IndustryTooltipMode.NORMAL, tooltip, true);
+            } else {
+                tooltip.addSectionHeading("Installed items", Alignment.MID, 10f);
+                for (var item : targetIndustry.getVisibleInstalledItems()) {
+                    tooltip.addPara(Global.getSettings().getSpecialItemSpec(item.getId()).getName(), 3f);
+                }
+                if (targetIndustry.getAICoreId() != null) {
+                    targetIndustry.addAICoreSection(tooltip, Industry.AICoreDescriptionMode.INDUSTRY_TOOLTIP);
+                }
+                tooltip.addSectionHeading("Improvements", Alignment.MID, 10f);
+                if (targetIndustry.isImproved()) targetIndustry.addImproveDesc(tooltip, Industry.ImprovementDescriptionMode.INDUSTRY_TOOLTIP);
+                else tooltip.addPara("No improvements installed.", 3f);
+            }
+            if (AoTDProductionLineManager.hasLocalOrder(targetIndustry)) {
+                AoTDIndustryRecipePlugin queued = AoTDIndustryRecipeManager.getInstance().getRecipe(initialSelection);
+                String name = initialSelection == null ? "Normal production" : queued == null ? initialSelection : queued.getName();
+                tooltip.addPara("Queued for next month: " + name, Misc.getHighlightColor(), 12f);
+            }
+            tooltip.addPara(targetIndustry.getMarket().getName() + " / " + targetIndustry.getCurrentName(),
+                    Misc.getHighlightColor(), 12f);
+            tooltip.addPara("Confirm schedules the selected plan after this month's production is collected.", 5f);
+            tooltip.addPara("A manually assigned plan takes priority over faction defaults and Apply on all markets.", 5f);
         }
         if (status != null) tooltip.addPara(status, Misc.getNegativeHighlightColor(), 12f);
         detailsPanel.addUIElement(tooltip).inTL(12f, 8f);
         contentPanel.addComponent(detailsPanel).inTL(tableWidth + 16f, 0);
     }
 
-    @Override public void clearUI() {
+    @Override
+    public void clearUI() {
         if (contentPanel != null) mainPanel.removeComponent(contentPanel);
         contentPanel = null;
         detailsPanel = null;
     }
-    @Override public void advance(float amount) { }
-    @Override public void positionChanged(PositionAPI position) { }
-    @Override public void renderBelow(float alphaMult) { }
-    @Override public void render(float alphaMult) { }
-    @Override public void processInput(List<InputEventAPI> events) { }
-    @Override public void buttonPressed(Object buttonId) { }
+    @Override
+    public void advance(float amount) { }
+    @Override
+    public void positionChanged(PositionAPI position) { }
+    @Override
+    public void renderBelow(float alphaMult) { }
+    @Override
+    public void render(float alphaMult) { }
+    @Override
+    public void processInput(List<InputEventAPI> events) { }
+    @Override
+    public void buttonPressed(Object buttonId) { }
 }

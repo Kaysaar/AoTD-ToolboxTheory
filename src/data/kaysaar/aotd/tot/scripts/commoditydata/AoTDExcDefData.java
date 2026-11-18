@@ -60,6 +60,11 @@ public class AoTDExcDefData {
     public static final String EXT_TRADE_ID = "aotd_ext_trade";
     public static final String DEF_FROM_NEW_IND = "aotd_new_ind_demand";
     public void clearExternalTrade(AoTDCommodityOnMarket commodity) {
+        collectTradeSurplus(commodity);
+        clearPreviousTradeModifiers();
+    }
+
+    public void collectTradeSurplus(AoTDCommodityOnMarket commodity) {
         int excessFromTrade = commodity.getExcessQuantityFromTrade();
         if(excessFromTrade>0){
             try {
@@ -82,6 +87,9 @@ public class AoTDExcDefData {
                 }
             }
         }
+    }
+
+    public void clearPreviousTradeModifiers() {
         if(deficit.getModifiedValue()>0){
             deficitConsequtiveMonths++;
         }

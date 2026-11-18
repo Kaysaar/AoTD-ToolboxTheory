@@ -1,5 +1,6 @@
 package data.kaysaar.aotd.tot.scripts.economy;
 
+import data.kaysaar.aotd.tot.conditions.AoTDRecipeCondition;
 import com.fs.starfarer.api.Global;
 import com.fs.starfarer.api.campaign.econ.*;
 import com.fs.starfarer.api.campaign.econ.SubmarketAPI;
@@ -413,12 +414,13 @@ public class AoTdMainWorkTask2 extends MainWorkTask2 {
     private static void processMarketReapplyStageImpl(MarketAPI market) {
         if (market == null) return;
 
+        AoTDRecipeCondition.ensure(market);
         market.reapplyConditions();
 
         AoTDIndustryData data = AoTDIndustryData.getInstance(market);
         for (Industry industry : market.getIndustries()) {
             if (!data.isPending(industry.getId())) {
-                industry.reapply();
+                AoTDRecipeCondition.reapplyIndustry(industry);
             }
         }
     }

@@ -13,6 +13,7 @@ import com.fs.starfarer.api.ui.TooltipMakerAPI;
 import com.fs.starfarer.api.util.Misc;
 import data.kaysaar.aotd.tot.recipes.AoTDProductionLineManager;
 
+
 import java.util.List;
 
 public class ProductionLineActions implements ExtendedUIPanelPlugin {
@@ -38,11 +39,11 @@ public class ProductionLineActions implements ExtendedUIPanelPlugin {
         applyAll = tooltip.addButton("Apply on all markets", null, Misc.getBasePlayerColor(),
                 Misc.getDarkPlayerColor(), Alignment.MID, CutStyle.BOTTOM, buttonWidth, 25f, 0f);
         applyAll.getPosition().inTL(width-buttonWidth-5, 0);
-        addHelp("Copies the plans in this table to all player-controlled markets. Default restores normal production. "
+        addHelp("Queues these defaults for all player-controlled markets at month end. Applying again replaces the queued order. "
                 + "Recipes that cannot be used on a particular market are skipped.");
         boolean enabled = owner.table != null && !owner.table.lines.isEmpty();
         applyAll.setEnabled(enabled);
-        if (owner.lastApplicationReport != null) {
+        if (AoTDProductionLineManager.getLastApplication() != null) {
             viewResult = tooltip.addButton("View last result", null, Misc.getBasePlayerColor(),
                     Misc.getDarkPlayerColor(), Alignment.MID, CutStyle.BOTTOM, 150f, 25f, 0f);
             viewResult.getPosition().inTL(width - buttonWidth - 165f, 0);
@@ -58,7 +59,9 @@ public class ProductionLineActions implements ExtendedUIPanelPlugin {
             public void createTooltip(TooltipMakerAPI tooltip, boolean expanded, Object param) {
                 tooltip.addPara(text, 0f);
                 tooltip.addPara(AoTDProductionLineManager.previewApplication().getSummary(), Misc.getHighlightColor(), 12f);
-                if (owner.lastActionResult != null) tooltip.addPara(owner.lastActionResult, Misc.getHighlightColor(), 10f);
+                if (AoTDProductionLineManager.hasPendingApplication()) {
+                    tooltip.addPara("A plan change is queued for month end.", Misc.getHighlightColor(), 10f);
+                }
             }
         }, TooltipMakerAPI.TooltipLocation.ABOVE, false);
     }
@@ -68,20 +71,18 @@ public class ProductionLineActions implements ExtendedUIPanelPlugin {
         if (applyAll == null) return;
         if(applyAll.isChecked()){
             applyAll.setChecked(false);
-            owner.lastApplicationReport = AoTDProductionLineManager.applyToAllMarketsDetailed();
-            owner.lastActionResult = owner.lastApplicationReport.getSummary();
-            showResult();
+            showResult(AoTDProductionLineManager.applyToAllMarketsDetailed());
             createUI();
         }
         if (viewResult != null && viewResult.isChecked()) {
             viewResult.setChecked(false);
-            showResult();
+            showResult(AoTDProductionLineManager.getLastApplication());
         }
     }
 
-    private void showResult() {
-        if (owner.lastApplicationReport == null) return;
-        AshMisc.initPopUpDialog(new ProductionPlanApplicationDialog(owner.lastApplicationReport),
+    private void showResult(AoTDProductionLineManager.ApplicationReport report) {
+        if (report == null) return;
+        AshMisc.initPopUpDialog(new ProductionPlanApplicationDialog(report),
                 Math.min(720f, Global.getSettings().getScreenWidth() - 40f),
                 Math.min(550f, Global.getSettings().getScreenHeight() - 40f));
     }

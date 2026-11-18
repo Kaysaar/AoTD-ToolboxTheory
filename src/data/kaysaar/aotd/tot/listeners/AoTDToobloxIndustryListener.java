@@ -1,6 +1,11 @@
 
 package data.kaysaar.aotd.tot.listeners;
 
+import ashlib.data.plugins.misc.AshMisc;
+import data.kaysaar.aotd.tot.recipes.AoTDIndustryRecipeManager;
+import data.kaysaar.aotd.tot.recipes.AoTDIndustryRecipePlugin;
+import data.kaysaar.aotd.tot.recipes.AoTDProductionLineManager;
+import data.kaysaar.aotd.tot.ui.production.ProductionPlanChangeDialog;
 import com.fs.starfarer.api.Global;
 import com.fs.starfarer.api.campaign.econ.Industry;
 import com.fs.starfarer.api.campaign.econ.MarketAPI;
@@ -25,19 +30,35 @@ import java.util.List;
 import java.util.Map;
 
 public class AoTDToobloxIndustryListener implements IndustryOptionProvider {
+    private static final Object CHANGE_PLAN = new Object();
+
     @Override
     public List<IndustryOptionData> getIndustryOptions(Industry ind) {
+        if (!AoTDProductionLineManager.isLocalTarget(ind)) return List.of();
+        AoTDIndustryRecipeManager recipes = AoTDIndustryRecipeManager.getInstance();
+        IndustryOptionData option = new IndustryOptionData("Change Production Plan", CHANGE_PLAN, ind, this);
+        option.color = Color.ORANGE;
+        if (AoTDProductionLineManager.hasLocalOrder(ind) || recipes.getActiveRecipe(ind) != null) {
+            return List.of(option);
+        }
+        for (AoTDIndustryRecipePlugin recipe : recipes.getRecipesForIndustry(ind.getId())) {
+            if (recipe.isVisibleInListOfRecipes(ind) && AoTDProductionLineManager.getUnavailableReason(recipe, ind) == null) {
+                return List.of(option);
+            }
+        }
         return List.of();
     }
 
     @Override
     public void createTooltip(IndustryOptionData opt, TooltipMakerAPI tooltip, float width) {
-
+        if (opt.id == CHANGE_PLAN) tooltip.addPara("Choose the plan this industry will use next month.", 3f);
     }
 
     @Override
     public void optionSelected(IndustryOptionData opt, DialogCreatorUI ui) {
-
+        if (opt.id != CHANGE_PLAN || !AoTDProductionLineManager.isLocalTarget(opt.ind)) return;
+        AshMisc.initPopUpDialog(new ProductionPlanChangeDialog(opt.ind), ProductionPlanChangeDialog.WIDTH,
+                Math.min(650f, Global.getSettings().getScreenHeight() - 40f));
     }
 
     @Override

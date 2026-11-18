@@ -8,10 +8,10 @@ import com.fs.starfarer.api.impl.campaign.ids.Conditions;
 public class AoTDPreviewMarket {
 
     public static MarketAPI getMarket() {
-        MarketAPI market = (MarketAPI) Global.getSector().getMemory().get("$aotd_checkout_market");
+        MarketAPI market = (MarketAPI) Global.getSector().getMemoryWithoutUpdate().get("$aotd_checkout_market");
         if (market == null) {
             market = createMarket();
-            Global.getSector().getMemory().set("$aotd_checkout_market", market);
+            Global.getSector().getMemoryWithoutUpdate().set("$aotd_checkout_market", market);
         }
         return market;
     }

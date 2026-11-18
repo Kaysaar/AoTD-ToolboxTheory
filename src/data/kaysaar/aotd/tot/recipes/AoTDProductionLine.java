@@ -14,8 +14,8 @@ import java.awt.Color;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-/** One industry type and its size-six production plan. Never uses a live colony. */
 public class AoTDProductionLine {
+    static final String PREVIEW_KEY = "$aotd_production_plan_preview";
     public final IndustrySpecAPI spec;
     public final LinkedHashMap<String, Integer> production = new LinkedHashMap<>();
     public final LinkedHashMap<String, Integer> demand = new LinkedHashMap<>();
@@ -32,13 +32,13 @@ public class AoTDProductionLine {
             // A fresh preview prevents recipes/industry effects leaking into other rows
             // or into the cached market used by VoK research tooltips.
             MarketAPI market = AoTDPreviewMarket.createMarket();
+            market.getMemoryWithoutUpdate().set(PREVIEW_KEY, true);
             market.addIndustry(spec.getId());
             industry = market.getIndustry(spec.getId());
             market.reapplyConditions();
             for (CommodityOnMarketAPI commodity : market.getAllCommodities()) {
                 commodity.getAvailableStat().setBaseValue(10000000f);
             }
-            industry.reapply();
 
             if (recipeId != null) {
                 AoTDIndustryRecipeManager manager = AoTDIndustryRecipeManager.getInstance();
@@ -46,12 +46,14 @@ public class AoTDProductionLine {
                 if (recipe == null || !spec.getId().equals(recipe.getIndustryTiedTo())) {
                     throw new IllegalArgumentException("Unknown production plan: " + recipeId);
                 }
-                if (!(industry instanceof BaseIndustry)) {
-                    throw new IllegalArgumentException("Recipe requires BaseIndustry: " + spec.getId());
-                }
                 // This is an isolated size-six preview. Availability is checked against
                 // the selection context separately, so locked plans remain inspectable.
-                recipe.applyRecipeToIndustry((BaseIndustry) industry);
+                if (recipe.doesFullyOverrideIndustry()) recipe.cancelIndustryEffects(industry);
+                else industry.reapply();
+                if (industry instanceof BaseIndustry base) recipe.applyRecipeToIndustry(base);
+                recipe.applyMarketEffects(market, industry.getId());
+            } else {
+                industry.reapply();
             }
             collect(production, false);
             collect(demand, true);

@@ -1,5 +1,6 @@
 package data.kaysaar.aotd.tot.ui.production.table;
 
+import data.kaysaar.aotd.tot.ui.production.ProductionPlanCommodities;
 import ashlib.data.plugins.ui.models.DropDownButton;
 import data.kaysaar.aotd.tot.recipes.AoTDProductionLine;
 
@@ -7,7 +8,8 @@ public class ProductionLineDropDownButton extends DropDownButton {
     public final AoTDProductionLine line;
 
     public ProductionLineDropDownButton(ProductionLineTable table, float width, AoTDProductionLine line) {
-        super(table, width, 70f, 0, 0, false);
+        super(table, width, Math.max(70f, ProductionPlanCommodities.requiredButtonHeight(
+                table.widthMap.get("production") - 6f, line.production.size(), line.demand.size())), 0, 0, false);
         this.line = line;
     }
 

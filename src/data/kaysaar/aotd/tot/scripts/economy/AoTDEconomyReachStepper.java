@@ -16,6 +16,8 @@ import com.fs.starfarer.campaign.econ.contract.ContractEconomy;
 import com.fs.starfarer.campaign.econ.contract.iter.MultiFrameTask;
 import com.fs.starfarer.campaign.econ.reach.*;
 import data.kaysaar.aotd.tot.events.AoTDTradeDemandEvent;
+import data.kaysaar.aotd.tot.recipes.AoTDProductionLineManager;
+import data.kaysaar.aotd.tot.scripts.commoditydata.AoTDCollectedProduction;
 import data.kaysaar.aotd.tot.scripts.commoditydata.AoTDCommodityOnMarket;
 import data.kaysaar.aotd.tot.scripts.trade.*;
 import data.kaysaar.aotd.tot.scripts.trade.contracts.AoTDTradeContractManager;
@@ -101,7 +103,18 @@ public class AoTDEconomyReachStepper extends ReachEconomyStepper {
         econ = reach;
     }
 
+    private AoTDCollectedProduction beginPlanSettlement() {
+        return !AoTDEconomy.runningPrePlayerEconomy && AoTDProductionLineManager.hasSettlementOrders()
+                ? new AoTDCollectedProduction() : null;
+    }
+
     public void performBeforeMonthEnds(int prevMonth) {
+        try (AoTDCollectedProduction production = beginPlanSettlement()) {
+            performBeforeMonthEnds(prevMonth, production);
+        }
+    }
+
+    private void performBeforeMonthEnds(int prevMonth, AoTDCollectedProduction production) {
         boolean profile = AoTDReachEconomy.PROFILE_NEXT_STEP;
         long started = profile ? System.nanoTime() : 0L;
         long last = started;
@@ -121,7 +134,9 @@ public class AoTDEconomyReachStepper extends ReachEconomyStepper {
 
         if (!AoTDEconomy.runningPrePlayerEconomy) {
             // Rebuild balances before contracts and external allocation when trade orders changed.
-            if (AoTDTradeDemandEvent.prepareForMonthlyAllocation()) {
+            boolean tradeOrdersChanged = AoTDTradeDemandEvent.prepareForMonthlyAllocation();
+            if (production != null) AoTDProductionLineManager.applyDuePlans(production);
+            if (tradeOrdersChanged) {
                 AoTDTradeManager manager = AoTDTradeManager.getInstance();
                 for (AoTDFactionTradeData tradeData : manager.getAllFactionTradeData().values()) {
                     tradeData.reset();
@@ -189,7 +204,11 @@ public class AoTDEconomyReachStepper extends ReachEconomyStepper {
                 AoTDIndustryData.getInstance(market).applyEndOfMonthChange(market);
                 for (CommodityOnMarketAPI c : market.getAllCommodities()) {
                     if (!(c instanceof AoTDCommodityOnMarket com)) continue;
-                    com.getExcDefData().clearExternalTrade(com);
+                    if (production != null && production.includes(market)) {
+                        com.getExcDefData().clearPreviousTradeModifiers();
+                    } else {
+                        com.getExcDefData().clearExternalTrade(com);
+                    }
                     String commodityId = com.getId();
                     int r = md.getRemainingNet(commodityId);
 
@@ -244,19 +263,21 @@ public class AoTDEconomyReachStepper extends ReachEconomyStepper {
                 final float daysInThisMonth = getNumDaysInCurrMonth() - Global.getSector().getClock().getDay();
                 untilNext = daysInThisMonth / ((float) Economy.NUM_ITER_PER_MONTH + 0f);
                 elapsed = untilNext / 2f;
-                performBeforeMonthEnds(prevMonth);
-                AoTDTradeManager.endOfMonth = true;
-                long endStarted = AoTDReachEconomy.PROFILE_NEXT_STEP ? System.nanoTime() : 0L;
-                doEndOfStepStuff(Economy.NUM_ITER_PER_MONTH - 1);
-                if (AoTDReachEconomy.PROFILE_NEXT_STEP) {
-                    Global.getLogger(AoTDEconomyReachStepper.class).info(String.format(java.util.Locale.ROOT,
-                            "AoTD monthEnd endStep=%.3fms", (System.nanoTime() - endStarted) / 1_000_000d));
-                }
-                long monthStarted = AoTDReachEconomy.PROFILE_NEXT_STEP ? System.nanoTime() : 0L;
-                doEndOfMonthStuff();
-                if (AoTDReachEconomy.PROFILE_NEXT_STEP) {
-                    Global.getLogger(AoTDEconomyReachStepper.class).info(String.format(java.util.Locale.ROOT,
-                            "AoTD monthEnd reportAndFinish=%.3fms", (System.nanoTime() - monthStarted) / 1_000_000d));
+                try (AoTDCollectedProduction production = beginPlanSettlement()) {
+                    performBeforeMonthEnds(prevMonth, production);
+                    AoTDTradeManager.endOfMonth = true;
+                    long endStarted = AoTDReachEconomy.PROFILE_NEXT_STEP ? System.nanoTime() : 0L;
+                    doEndOfStepStuff(Economy.NUM_ITER_PER_MONTH - 1);
+                    if (AoTDReachEconomy.PROFILE_NEXT_STEP) {
+                        Global.getLogger(AoTDEconomyReachStepper.class).info(String.format(java.util.Locale.ROOT,
+                                "AoTD monthEnd endStep=%.3fms", (System.nanoTime() - endStarted) / 1_000_000d));
+                    }
+                    long monthStarted = AoTDReachEconomy.PROFILE_NEXT_STEP ? System.nanoTime() : 0L;
+                    doEndOfMonthStuff();
+                    if (AoTDReachEconomy.PROFILE_NEXT_STEP) {
+                        Global.getLogger(AoTDEconomyReachStepper.class).info(String.format(java.util.Locale.ROOT,
+                                "AoTD monthEnd reportAndFinish=%.3fms", (System.nanoTime() - monthStarted) / 1_000_000d));
+                    }
                 }
             }
         }

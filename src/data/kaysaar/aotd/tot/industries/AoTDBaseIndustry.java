@@ -32,6 +32,8 @@ import data.kaysaar.aotd.tot.scripts.economy.AoTDIndustryData;
 import data.kaysaar.aotd.tot.ui.commoditypanel.AoTDCommodityShortPanel;
 import data.kaysaar.aotd.tot.ui.commoditypanel.AoTDCommodityShortPanelCombined;
 
+import data.kaysaar.aotd.tot.recipes.AoTDIndustryRecipePlugin;
+
 import java.awt.Color;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -64,7 +66,15 @@ public abstract class AoTDBaseIndustry extends BaseIndustry {
     }
 
     @Override
-    public final void apply() {
+    public void apply() {
+        if (AoTDIndustryRecipePlugin.supportsDirectRecipes(this)) {
+            AoTDIndustryRecipePlugin.applyRecipeFromIndustry(this, this::applyNativeIndustry);
+        } else {
+            applyNativeIndustry();
+        }
+    }
+
+    private void applyNativeIndustry() {
         super.apply(true);
         updateIndustryAmounts();
         if(!isFunctional())supply.clear();
@@ -81,6 +91,7 @@ public abstract class AoTDBaseIndustry extends BaseIndustry {
 
     @Override
     public void unapply() {
+        AoTDIndustryRecipePlugin.unapplyRecipeFromIndustry(this);
         unapplyIndustryEffects();
         super.unapply();
     }

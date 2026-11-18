@@ -3,8 +3,10 @@ package data.kaysaar.aotd.tot.recipes.impl;
 import com.fs.starfarer.api.campaign.econ.Industry;
 import com.fs.starfarer.api.impl.campaign.econ.impl.BaseIndustry;
 import com.fs.starfarer.api.impl.campaign.ids.Commodities;
-import com.fs.starfarer.api.ui.TooltipMakerAPI;
 import data.kaysaar.aotd.tot.recipes.AoTDIndustryRecipePlugin;
+
+import com.fs.starfarer.api.ui.Alignment;
+import com.fs.starfarer.api.ui.TooltipMakerAPI;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -63,7 +65,29 @@ public class CatalyticRefiningRecipe extends AoTDIndustryRecipePlugin {
     }
 
     @Override
-    public void addOnHoverTooltip(TooltipMakerAPI tooltip, Industry industry, int marketSize) {
-        tooltip.addPara("Volatiles-assisted refining yields 20% more metals and rare metals when supplied.", 0f);
+    public void onRecipeRemoved(BaseIndustry industry) {
+        industry.demand(Commodities.ORE, 0);
+        industry.getDemand(Commodities.ORE).getQuantity().unmodifyFlat("ind_dr");
+        industry.demand(Commodities.RARE_ORE, 0);
+        industry.getDemand(Commodities.RARE_ORE).getQuantity().unmodifyFlat("ind_dr");
+        industry.demand(Commodities.VOLATILES, 0);
+        industry.getDemand(Commodities.VOLATILES).getQuantity().unmodifyFlat("ind_dr");
+        industry.supply(Commodities.METALS, 0);
+        industry.supply(2, Commodities.METALS, 0, "");
+        industry.getSupply(Commodities.METALS).getQuantity().unmodifyFlat("ind_sb");
+        industry.supply(Commodities.RARE_METALS, 0);
+        industry.supply(2, Commodities.RARE_METALS, 0, "");
+        industry.getSupply(Commodities.RARE_METALS).getQuantity().unmodifyFlat("ind_sb");
+    }
+
+    @Override
+    public String getDescription(Industry industry) {
+        return "Uses volatiles to refine ore and rare ore.";
+    }
+
+    @Override
+    public void createAdditionalEffectsSection(TooltipMakerAPI tooltip) {
+        tooltip.addSectionHeading("Additional effects", Alignment.MID, 12f);
+        tooltip.addPara("Metals and rare metals output increase by 20% when volatiles demand is fully met.", 6f);
     }
 }

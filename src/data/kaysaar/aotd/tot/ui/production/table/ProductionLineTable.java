@@ -34,7 +34,7 @@ public class ProductionLineTable extends UITableImpl {
         // Recompute from scratch, so reopening/resizing cannot accumulate width.
         float available = width - 23f; // left inset, scrollbar allowance, three dividers
         float name = Math.min(285f, available * 0.42f);
-        float recipe = Math.min(155f, available * 0.22f);
+        float recipe = Math.min(200, available * 0.22f);
         float commodities = (available - name - recipe) / 2f;
         widthMap.put("name", name);
         widthMap.put("recipe", recipe);

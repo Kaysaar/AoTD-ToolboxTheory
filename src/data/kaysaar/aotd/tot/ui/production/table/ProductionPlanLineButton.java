@@ -22,7 +22,7 @@ public class ProductionPlanLineButton extends CustomButton {
     public void createButtonContent(TooltipMakerAPI tooltip) {
         CustomPanelAPI content = mainPanel.createCustomPanel(width, height, null);
         ProductionPlanCommodities.addText(content, plan.getRecipeName(), plan.getRecipeColor(),
-                8f, 0, table.nameWidth - 16f, height);
+                0f, 0, table.nameWidth , height);
         ProductionPlanCommodities.add(content, plan.production, false, plan.error,
                 table.nameWidth, 0, table.commodityWidth, height);
         ProductionPlanCommodities.add(content, plan.demand, true, plan.error,
