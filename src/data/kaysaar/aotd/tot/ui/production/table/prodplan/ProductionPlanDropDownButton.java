@@ -1,4 +1,4 @@
-package data.kaysaar.aotd.tot.ui.production.table;
+package data.kaysaar.aotd.tot.ui.production.table.prodplan;
 
 import ashlib.data.plugins.ui.models.DropDownButton;
 import data.kaysaar.aotd.tot.recipes.AoTDProductionLine;

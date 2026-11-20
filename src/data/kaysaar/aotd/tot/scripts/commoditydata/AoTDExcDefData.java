@@ -80,7 +80,9 @@ public class AoTDExcDefData {
 
             if(commodity.getMarket().hasSubmarket(Submarkets.LOCAL_RESOURCES)){
                 if(commodity.getMarket().getSubmarket(Submarkets.LOCAL_RESOURCES).getCargo()!=null){
-                    commodity.getMarket().getSubmarket(Submarkets.LOCAL_RESOURCES).getCargo().addCommodity(commodity.getId(),commodity.getExcessQuantity());
+                    if (!commodity.getSpec().isMeta()) {
+                        commodity.getMarket().getSubmarket(Submarkets.LOCAL_RESOURCES).getCargo().addCommodity(commodity.getId(),commodity.getExcessQuantity());
+                    }
                     commodity.getTradeMod().unmodify();
                     commodity.getTradeModPlus().unmodify();
                     commodity.getTradeModMinus().unmodify();

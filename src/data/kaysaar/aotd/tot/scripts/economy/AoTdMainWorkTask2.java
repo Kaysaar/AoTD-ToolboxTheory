@@ -418,11 +418,25 @@ public class AoTdMainWorkTask2 extends MainWorkTask2 {
         market.reapplyConditions();
 
         AoTDIndustryData data = AoTDIndustryData.getInstance(market);
+        data.checkForNewIndustries(market);
         for (Industry industry : market.getIndustries()) {
             if (!data.isPending(industry.getId())) {
                 AoTDRecipeCondition.reapplyIndustry(industry);
+            } else if (industry.getDemandReductionFromOther().getFlatStatMod(AoTDIndustryData.source) == null) {
+                AoTDUpdateMarketAgainTask.applyPendingIndustrySuppression(industry);
             }
         }
+    }
+
+    public static void refreshMarketCommodityData(MarketAPI market) {
+        processMarketReapplyStageImpl(market);
+        AoTDSupplyDemandData.updateSupplyDemandDataAcrossMarket(market);
+        for (CommodityOnMarketAPI commodity : market.getCommoditiesCopy()) {
+            if (commodity instanceof AoTDCommodityOnMarket local) {
+                local.getExcDefData().applyDeficitDueToSuddenChangeOfDemand(local);
+            }
+        }
+        AoTDIndustryData.getInstance(market).commodityDataRevision++;
     }
 
     private void createCommodityMarketData(String commodityId) {

@@ -2,6 +2,7 @@
 package data.kaysaar.aotd.tot.listeners;
 
 import ashlib.data.plugins.misc.AshMisc;
+import data.kaysaar.aotd.tot.conditions.AoTDToolboxFoodProd;
 import data.kaysaar.aotd.tot.recipes.AoTDIndustryRecipeManager;
 import data.kaysaar.aotd.tot.recipes.AoTDIndustryRecipePlugin;
 import data.kaysaar.aotd.tot.recipes.AoTDProductionLineManager;
@@ -51,7 +52,9 @@ public class AoTDToobloxIndustryListener implements IndustryOptionProvider {
 
     @Override
     public void createTooltip(IndustryOptionData opt, TooltipMakerAPI tooltip, float width) {
-        if (opt.id == CHANGE_PLAN) tooltip.addPara("Choose the plan this industry will use next month.", 3f);
+        if (opt.id == CHANGE_PLAN) tooltip.addPara(AoTDProductionLineManager.isAwaitingAllocation(opt.ind)
+                ? "Choose the resources this industry will request while it awaits allocation."
+                : "Choose the plan this industry will use next month.", 3f);
     }
 
     @Override
@@ -99,6 +102,9 @@ public class AoTDToobloxIndustryListener implements IndustryOptionProvider {
                     }
                 }
 
+                if (quantity.getFlatStatMod(AoTDToolboxFoodProd.prodId) != null) {
+                    AoTDToolboxFoodProd.applyFoodBonus(ind, quantity);
+                }
                 int raw = AoTDCommodityEconSpecManager.getEconSpec(commodityId).getCalculationScript()
                         .getRawUnitsFromSupply(quantity,market,commodityId,ind);
 

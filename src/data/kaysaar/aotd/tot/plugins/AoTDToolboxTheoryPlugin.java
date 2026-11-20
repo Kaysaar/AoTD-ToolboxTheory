@@ -1,6 +1,8 @@
 package data.kaysaar.aotd.tot.plugins;
 
 
+import data.kaysaar.aotd.tot.abilities.DeployFrontierKit;
+import data.kaysaar.aotd.tot.entities.FrontierDeviceExpiry;
 import data.kaysaar.aotd.tot.recipes.AoTDNewIndustryDefaults;
 import data.kaysaar.aotd.tot.conditions.AoTDRecipeCondition;
 import ashlib.data.plugins.coreui.CommandTabMemoryManager;
@@ -388,6 +390,10 @@ public class AoTDToolboxTheoryPlugin extends BaseModPlugin implements MarketCont
 
     @Override
     public void onGameLoad(boolean newGame) {
+        FrontierDeviceExpiry.restoreDeviceTooltips();
+        if (!Global.getSector().getCharacterData().getAbilities().contains(DeployFrontierKit.ID)) {
+            Global.getSector().getCharacterData().addAbility(DeployFrontierKit.ID);
+        }
         AoTDNewIndustryDefaults.install();
         AoTDEconomyRouteManager.install();
         AoTDStableStructureAdvanceScript.install();
@@ -430,6 +436,7 @@ public class AoTDToolboxTheoryPlugin extends BaseModPlugin implements MarketCont
         Global.getSector().getListenerManager().addListener(new AoTDGrandWonderBtnListener(), true);
         Global.getSector().getListenerManager().addListener(new AoTDGrandWonderDecivListener(), true);
         Global.getSector().getListenerManager().addListener(new AoTDCommodityTooltipInjector(), true);
+        Global.getSector().getListenerManager().addListener(new FrontierKitSubmarketListener(), true);
         if (newGame) {
             for (MarketAPI marketAPI : Global.getSector().getEconomy().getMarketsCopy()) {
                 marketAPI.reapplyConditions();

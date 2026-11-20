@@ -49,20 +49,22 @@ public class AoTDCommodityMarketData extends CommodityMarketData {
                 var40.unmodify();
 
 
-                stockPile-=aoTDCommodityOnMarket.getDeficitQuantity();
-                stockPile+=aoTDCommodityOnMarket.getExcessQuantity();
-
-
-
-                int am = aoTDCommodityOnMarket.getSupplyDemandData().getAvailableOnThisMarket(stockPile,market,commodityId);
-
+                updateLocalAvailability(aoTDCommodityOnMarket);
                 MarketShareData var33 = this.getMarketShareData(market);
                 var33.setSource(CommoditySourceType.LOCAL);
-                var40.modifyFlat("aotd_local",am,"Ashes of the Domain Stockpile script");
             }
 
 
         }
+    }
+
+    public static void updateLocalAvailability(AoTDCommodityOnMarket commodity) {
+        AoTDSupplyDemandData data = commodity.getSupplyDemandData();
+        float cargo = Math.max(data.getTotalRawUnitsFromDemand(), data.getTotalRawUnitsFromSupply());
+        cargo -= commodity.getDeficitQuantity();
+        cargo += commodity.getExcessQuantity();
+        int available = data.getAvailableOnThisMarket(cargo, commodity.getMarket(), commodity.getId());
+        commodity.getAvailableStat().modifyFlat("aotd_local", available, "Ashes of the Domain Stockpile script");
     }
 
     @Override

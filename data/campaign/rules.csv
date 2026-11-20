@@ -1,17 +1,52 @@
 id,trigger,conditions,script,text,options,notes
 #RULESET_NAME aotd,,,,,,
 aotd_check_for_trade_fleet,BeginFleetEncounter,AoTDFleetCheck score:1000,AoTDFleetDesc,,,
+aotd_dissable_break_for_salvage,COB_DisableIndividualOptions,"$faction.id != player",SetEnabled COB_salvage false,"$name is massive structure, it can't be dismantled easily and it would take weeks to do it properly.",,
+aotd_dissable_break_for_salvage_pl,COB_DisableIndividualOptions,"$faction.id == player
+!$tag:aotd_frontier_device",SetEnabled COB_salvage false,"$name is a massive structure that cannot be dismantled through conventional means. A proper dismantling operation would take several weeks to complete.
+
+As the structure belongs to your faction, its dismantling can instead be ordered through the Star Systems & Colonies tab.",,
+aotd_stable_open,OpenInteractionDialog,$tag:aotd_stable_location,"ShowDefaultVisual
+PrintDescription 1
+FireAll AoTDSTablePointAddOptionsOrText",,,
+aotd_stable_open_text,AoTDSTablePointAddOptionsOrText,,,"This stable point can support the construction of massive orbital structures.
+
+Construction of structures requiring a stable point can be initiated through the Star Systems & Colonies tab, provided the system belongs to your faction.
+",,
+aotd_cob_openDialog,OpenInteractionDialog,$tag:aotd_objective,"ShowDefaultVisual
+Objectives printDescription
+FireAll COB_AddOptions
+FireBest COB_DisableOptionsIfNeeded
+FireAll COB_DisableIndividualOptions",,,
+aotd_cob_dissable_control,COB_DisableIndividualOptions,,SetEnabled COB_takeControl false,,,
 ,,,,,,
+aotd_wormhole_add_opt,AoTDSTablePointAddOptionsOrText,Objectives hasWormholeAnchor,,,40:SL_wormhole:Deploy a wormhole anchor,
+aotd_add_opt_exit,AoTDSTablePointAddOptionsOrText,,"SetShortcut SL_Leave ""ESCAPE""",,100:SL_Leave:Leave,
+aotd_scaffold_open,OpenInteractionDialog,$tag:aotd_scaffold,"ShowDefaultVisual
+SetShortcut aotd_scaffold_leave ""ESCAPE""",This structure is under construction. Construction materials are drawn from your faction's production capacity each month through trade contracts. Monitor progress from the star system structures panel.,aotd_scaffold_leave:Leave,
+aotd_scaffold_leave,DialogOptionSelected,$option == aotd_scaffold_leave,DismissDialog,,,
 ,,,,,,
-,,,,,,
-,,,,,,
-,,,,,,
-,,,,,,
-,,,,,,
-,,,,,,
-,,,,,,
-,,,,,,
-,,,,,,
+# Frontier kit deployment and interactions,,,,,,
+aotd_frontier_menu,AoTDFrontierKitMenu,,"ShowImageVisual free_orbit
+SetShortcut aotd_frontier_leave ""ESCAPE""",Choose a configuration for the Frontier Development Kit. The device will remain in orbit for 210 days.,"10:aotd_frontier_comm_relay:Deploy makeshift comm relay
+20:aotd_frontier_sensor_array:Deploy makeshift sensor array
+30:aotd_frontier_nav_buoy:Deploy makeshift nav buoy
+100:aotd_frontier_leave:Leave",
+aotd_frontier_deploy_comm_relay,DialogOptionSelected,$option == aotd_frontier_comm_relay,"AoTDFrontierKit comm_relay
+SetShortcut aotd_frontier_leave ""ESCAPE""",,100:aotd_frontier_leave:Leave,
+aotd_frontier_deploy_sensor_array,DialogOptionSelected,$option == aotd_frontier_sensor_array,"AoTDFrontierKit sensor_array
+SetShortcut aotd_frontier_leave ""ESCAPE""",,100:aotd_frontier_leave:Leave,
+aotd_frontier_deploy_nav_buoy,DialogOptionSelected,$option == aotd_frontier_nav_buoy,"AoTDFrontierKit nav_buoy
+SetShortcut aotd_frontier_leave ""ESCAPE""",,100:aotd_frontier_leave:Leave,
+aotd_frontier_leave,DialogOptionSelected,$option == aotd_frontier_leave,DismissDialog,,,
+aotd_frontier_device_open,OpenInteractionDialog,$tag:aotd_frontier_device,"ShowDefaultVisual
+FireAll COB_AddOptions
+FireBest COB_DisableOptionsIfNeeded
+FireAll COB_DisableIndividualOptions",Your fleet establishes a link with the $shortName.,,
+aotd_frontier_portable,COB_DisableIndividualOptions,$tag:aotd_frontier_device,"RemoveOption COB_salvage
+RemoveOption SL_upgradeToDomainRelay
+RemoveOption SL_upgradeToDomainArray
+RemoveOption SL_upgradeToDomainBuoy",,,
 ,,,,,,
 ,,,,,,
 ,,,,,,

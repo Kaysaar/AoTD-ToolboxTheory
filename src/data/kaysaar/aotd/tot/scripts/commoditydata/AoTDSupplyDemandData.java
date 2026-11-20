@@ -7,6 +7,8 @@ import com.fs.starfarer.api.campaign.econ.MutableCommodityQuantity;
 import com.fs.starfarer.api.combat.MutableStat;
 import data.kaysaar.aotd.tot.industries.AoTDBaseIndustry;
 import data.kaysaar.aotd.tot.plugins.AoTDBaseDemSupCalc;
+import data.kaysaar.aotd.tot.plugins.ReflectionUtilis;
+import com.fs.starfarer.api.impl.campaign.econ.impl.BaseIndustry;
 import data.kaysaar.aotd.tot.plugins.AoTDCommodityEconSpec;
 import data.kaysaar.aotd.tot.plugins.AoTDCommodityEconSpecManager;
 import data.kaysaar.aotd.tot.plugins.AoTDExponentialSupDemCalc;
@@ -208,13 +210,14 @@ public class AoTDSupplyDemandData {
             addCommodity(commodity, inputs, fallback, includeFallback);
         }
 
+        AoTDIndustryData industryData = AoTDIndustryData.getInstance(market);
         Map<String, Industry> firstIndustry = new LinkedHashMap<>();
 
         for (Industry industry : market.getIndustries()) {
             firstIndustry.putIfAbsent(industry.getId(), industry);
 
             collectInputs(market, industry, industry.getAllSupply(), true, known, inputs, fallback, includeFallback);
-            collectInputs(market, industry, industry instanceof AoTDBaseIndustry ind ? ind.getVanillaDemandEntries() : industry.getAllDemand(), false, known, inputs, fallback, includeFallback);
+            collectInputs(market, industry, getDemandEntries(industry, industryData.isPending(industry.getId())), false, known, inputs, fallback, includeFallback);
             if(industry instanceof AoTDBaseIndustry ind){
                 collectExactInputs(market,ind,ind.getExactProduction(),true,known,inputs,fallback,includeFallback);
                 collectExactInputs(market,ind,ind.getExactDemand(),false,known,inputs,fallback,includeFallback);
@@ -222,7 +225,6 @@ public class AoTDSupplyDemandData {
         }
 
         Set<AoTDSupplyDemandData> updated = Collections.newSetFromMap(new IdentityHashMap<>());
-        AoTDIndustryData industryData = AoTDIndustryData.getInstance(market);
 
         for (CommodityInputs input : inputs.values()) {
             int newSupply = 0;
@@ -276,15 +278,26 @@ public class AoTDSupplyDemandData {
         return updated;
     }
 
+    @SuppressWarnings("unchecked")
+    public static Collection<MutableCommodityQuantity> getDemandEntries(Industry industry, boolean pending) {
+        if (industry instanceof AoTDBaseIndustry ind) return ind.getVanillaDemandEntries();
+        if (pending && industry instanceof BaseIndustry) {
+            Object demand = ReflectionUtilis.getPrivateVariable("demand", industry);
+            if (demand instanceof Map<?, ?> entries) return (Collection<MutableCommodityQuantity>) entries.values();
+        }
+        return industry.getAllDemand();
+    }
+
     private static void collectInputs(MarketAPI market,
                                       Industry industry,
-                                      List<MutableCommodityQuantity> entries,
+                                      Collection<MutableCommodityQuantity> entries,
                                       boolean supply,
                                       Set<String> known,
                                       Map<String, CommodityInputs> inputs,
                                       List<AoTDSupplyDemandData> fallback,
                                       boolean includeFallback) {
         for (MutableCommodityQuantity entry : entries) {
+            if (entry.getQuantity().isUnmodified() && entry.getQuantity().getBaseValue() == 0f) continue;
             String id = entry.getCommodityId();
 
             if (known.add(id)) {

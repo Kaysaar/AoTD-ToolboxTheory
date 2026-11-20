@@ -1,6 +1,7 @@
-package data.kaysaar.aotd.tot.ui.production.table;
+package data.kaysaar.aotd.tot.ui.production.table.prodplan;
 
 import ashlib.data.plugins.ui.models.CustomButton;
+import com.fs.starfarer.api.ui.Alignment;
 import com.fs.starfarer.api.ui.CustomPanelAPI;
 import com.fs.starfarer.api.ui.TooltipMakerAPI;
 import com.fs.starfarer.api.util.Misc;
@@ -21,8 +22,8 @@ public class ProductionPlanLineButton extends CustomButton {
     @Override
     public void createButtonContent(TooltipMakerAPI tooltip) {
         CustomPanelAPI content = mainPanel.createCustomPanel(width, height, null);
-        ProductionPlanCommodities.addText(content, plan.getRecipeName(), plan.getRecipeColor(),
-                0f, 0, table.nameWidth , height);
+        ProductionPlanCommodities.addSingleLineText(content, plan.getRecipeName(), plan.getRecipeColor(),
+                0f, table.nameWidth, height, Alignment.MID);
         ProductionPlanCommodities.add(content, plan.production, false, plan.error,
                 table.nameWidth, 0, table.commodityWidth, height);
         ProductionPlanCommodities.add(content, plan.demand, true, plan.error,

@@ -26,9 +26,13 @@ public class AoTDCommodityShortPanelCombined implements ExtendedUIPanelPlugin {
     }
 
     public AoTDCommodityShortPanelCombined(float width, int columns, Industry ind, boolean demand,boolean ignoreDemand) {
+        this(width, columns, ind, demand, ignoreDemand, AoTDIndustryAmounts.getCommodityIds(ind, demand));
+    }
+
+    public AoTDCommodityShortPanelCombined(float width, int columns, Industry ind, boolean demand, boolean ignoreDemand,
+                                           List<String> list) {
         float ySeparator = 3f;
         float xGap = 2f;
-        List<String> list = AoTDIndustryAmounts.getCommodityIds(ind,demand);
         int count = list.size();
         int rows = (int)Math.ceil((double)count / columns);
         float height = rows == 0 ? 0 : rows * AoTDCommodityShortPanel.height + (rows - 1) * ySeparator;

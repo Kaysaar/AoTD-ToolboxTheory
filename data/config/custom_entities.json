@@ -1,0 +1,130 @@
+{
+    "aotd_makeshift_comm_relay": {
+        "customDescriptionId": "aotd_makeshift_comm_relay",
+        "baseId": "base_campaign_objective",
+        "defaultName": "Makeshift Comm Relay",
+        "nameInText": "makeshift comm relay",
+        "shortName": "comm relay",
+        "defaultRadius": 28,
+        "icon": "graphics/icons/relay_makeshift.png",
+        "iconWidth": 16,
+        "iconHeight": 16,
+        "sprite": "graphics/ships/deployables/mini_comm_relay.png",
+        "spriteWidth": 64,
+        "spriteHeight": 64,
+        "interactionImage": "graphics/illustrations/comm_relay.jpg",
+        "tags": [
+            "has_interaction_dialog",
+            "aotd_frontier_device",
+            "comm_relay",
+            "makeshift"
+        ],
+        "pluginClass": "data.kaysaar.aotd.tot.entities.FrontierCommRelay"
+    },
+    "aotd_makeshift_sensor_array": {
+        "customDescriptionId": "aotd_makeshift_sensor_array",
+        "baseId": "base_campaign_objective",
+        "defaultName": "Makeshift Sensor Array",
+        "nameInText": "makeshift sensor array",
+        "shortName": "sensor array",
+        "defaultRadius": 28,
+        "icon": "graphics/icons/sensor_array_makeshift.png",
+        "iconWidth": 16,
+        "iconHeight": 16,
+        "sprite": "graphics/ships/deployables/mini_sensor_array.png",
+        "spriteWidth": 64,
+        "spriteHeight": 64,
+        "interactionImage": "graphics/illustrations/sensor_array_makeshift.jpg",
+        "tags": [
+            "has_interaction_dialog",
+            "aotd_frontier_device",
+            "sensor_array",
+            "makeshift"
+        ],
+        "pluginClass": "data.kaysaar.aotd.tot.entities.FrontierDevice"
+    },
+    "aotd_makeshift_nav_buoy": {
+        "customDescriptionId": "aotd_makeshift_nav_buoy",
+        "baseId": "base_campaign_objective",
+        "defaultName": "Makeshift Nav Buoy",
+        "nameInText": "makeshift nav buoy",
+        "shortName": "nav buoy",
+        "defaultRadius": 28,
+        "icon": "graphics/icons/nav_buoy_makeshift.png",
+        "iconWidth": 16,
+        "iconHeight": 16,
+        "sprite": "graphics/ships/deployables/mini_navbeacon.png",
+        "spriteWidth": 64,
+        "spriteHeight": 64,
+        "interactionImage": "graphics/illustrations/nav_buoy.jpg",
+        "tags": [
+            "has_interaction_dialog",
+            "aotd_frontier_device",
+            "nav_buoy",
+            "makeshift"
+        ],
+        "pluginClass": "data.kaysaar.aotd.tot.entities.FrontierDevice"
+    },
+    "aotd_scaffold": {
+        "defaultName": "Structure under construction",
+        "nameInText": "construction site",
+        "shortName": "construction site",
+        "radius": 60,
+        "icon": "graphics/icons/aotd_system_scaffold.png",
+        "iconWidth": 12,
+        "iconHeight": 12,
+        "renderShadow": false,
+        "tags": [
+            "aotd_objective",
+            "aotd_scaffold",
+            "ashlib_show_only_icon_on_map"
+        ],
+        "layers": [
+            "STATIONS"
+        ],
+        "pluginClass": "data.kaysaar.aotd.tot.entities.AoTDStableStructureScaffold"
+    },
+    "aotd_scaffold_overlay": {
+        "baseId": "aotd_scaffold",
+        "tags": [],
+        "showIconOnMap": false,
+        "showNameOnMap": false,
+        "interactable": false,
+        "renderCircleIndicator": false
+    },
+    "aotd_apc":{
+		"baseId":"base_campaign_objective",
+		"defaultName":"Asteroid Processing Center", # used if name=null in addCustomEntity()
+		"nameInText":"asteroid processing center",
+		"shortName":"apc",
+		"icon":"graphics/icons/station_mining.png",
+		"iconWidth":24,
+		"iconHeight":24,
+		"sprite":"graphics/entities/aotd_apc.png",
+		"spriteWidth":55,
+		"spriteHeight":106,
+		"customDescriptionId":"aotd_apc",
+		"interactionImage":"graphics/illustrations/asteroid_belt_moon.jpg",
+		"tags":["aotd_apc", "neutrino_high"],
+		"layers":[STATIONS], # what layer(s) to render in. See CampaignEngineLayers.java for possible values
+		"pluginClass":"data.kaysaar.aotd.tot.entities.AoTDAPC",
+	},
+     "aotd_scav_enclave":{
+		"baseId":"base_campaign_objective",
+		"defaultName":"Scavenger Enclave", # used if name=null in addCustomEntity()
+		"nameInText":"scavenger enclave",
+		"shortName":"apc",
+		"icon":"graphics/icons/aotd_scav_enclave_icon.png",
+		"iconWidth":24,
+		"iconHeight":24,
+		"sprite":"graphics/entities/aotd_scav_enclave.png",
+		"spriteWidth":120,
+		"spriteHeight":58,
+		"customDescriptionId":"aotd_scav_enclave",
+		"interactionImage":"graphics/illustrations/jangala_station.jpg",
+		"tags":["aotd_scav_enclave", "neutrino_high"],
+		"layers":[STATIONS], # what layer(s) to render in. See CampaignEngineLayers.java for possible values
+		"pluginClass":"data.kaysaar.aotd.tot.entities.AoTDScavEnclave",
+	},
+
+}

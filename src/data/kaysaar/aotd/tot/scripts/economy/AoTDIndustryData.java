@@ -80,6 +80,7 @@ public class AoTDIndustryData {
     public static String source ="aotd_economy_correction";
     public static String memKey = "$aotd_industry_data";
     public LinkedHashMap<String,AoTDIndustryState>statesOnMarket = new LinkedHashMap<>();
+    public transient long commodityDataRevision;
 
     public static AoTDIndustryData getInstance(MarketAPI market){
         if(!market.getMemoryWithoutUpdate().contains(memKey)){
@@ -124,6 +125,7 @@ public class AoTDIndustryData {
             }
         }
         toRemove.forEach(x->getIndustriesToIgnoreDueToUpgrade().remove(x));
+        statesOnMarket.keySet().removeIf(id -> !market.hasIndustry(id));
     }
     public boolean isPending(String id){
 

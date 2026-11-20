@@ -151,6 +151,7 @@ public class CommoditiesPanelInjector implements MarketUIListener {
             else{
                 injectForGrandColonies(mainPanel,market);
             }
+            AoTDCommodityPanel newPanel = new AoTDCommodityPanel(toRemove.getPosition().getWidth()+xAxis+extraWidth,toRemove.getPosition().getHeight()+additionalHeight,market,false);
             if(incomeInjector!=null){
                 UIComponentAPI imigr = (UIComponentAPI) ReflectionUtilis.invokeMethodWithAutoProjection("getImmigration",incomeInjector);
                 IncomePanel panel = new IncomePanel(market);
@@ -164,7 +165,6 @@ public class CommoditiesPanelInjector implements MarketUIListener {
 
             }
             mainPanel.getPosition().inTL(-xAxis,30);
-            AoTDCommodityPanel newPanel = new AoTDCommodityPanel(toRemove.getPosition().getWidth()+xAxis+extraWidth,toRemove.getPosition().getHeight()+additionalHeight,market,false);
             newPanel.setMainColonyPanel(ctx.mainColonyPanel);
             mainPanel.removeComponent(toRemove);
             mainPanel.addComponent(newPanel.getMainPanel()).inBR(-xAxis-extraWidth,mainPanel.getPosition().getHeight()-610+additionalHeight);

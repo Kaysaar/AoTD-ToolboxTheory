@@ -3,12 +3,23 @@ package data.kaysaar.aotd.tot.scripts.economy;
 import com.fs.starfarer.api.Global;
 import com.fs.starfarer.api.campaign.econ.Industry;
 import com.fs.starfarer.api.campaign.econ.MarketAPI;
+import com.fs.starfarer.api.campaign.econ.MutableCommodityQuantity;
+import com.fs.starfarer.api.combat.MutableStat;
+import com.fs.starfarer.api.impl.campaign.econ.impl.BaseIndustry;
 import com.fs.starfarer.campaign.econ.Economy;
 import com.fs.starfarer.campaign.econ.reach.UpdateMarketsAgainTask;
+import data.kaysaar.aotd.tot.conditions.AoTDToolboxFoodProd;
+import data.kaysaar.aotd.tot.conditions.AoTDRecipeCondition;
+import data.kaysaar.aotd.tot.industries.AoTDBaseIndustry;
+import data.kaysaar.aotd.tot.recipes.AoTDIndustryRecipeManager;
+import data.kaysaar.aotd.tot.recipes.AoTDIndustryRecipePlugin;
+import data.kaysaar.aotd.tot.scripts.commoditydata.AoTDSupplyDemandData;
 import data.kaysaar.aotd.tot.scripts.trade.manager.AoTDTradeManager;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.Locale;
 
 public class AoTDUpdateMarketAgainTask extends UpdateMarketsAgainTask {
@@ -127,15 +138,62 @@ public class AoTDUpdateMarketAgainTask extends UpdateMarketsAgainTask {
         industry.getDemandReductionFromOther().modifyFlat(
                 AoTDIndustryData.source, getReduction(), INITIAL_STAGE_DESC
         );
+        industry.getSupplyBonus().modifyFlat(AoTDIndustryData.source, -getReduction(), INITIAL_STAGE_DESC);
+        industry.getDemandReduction().modifyFlat(AoTDIndustryData.source, getReduction(), INITIAL_STAGE_DESC);
         industry.apply();
-        industry.unapply();
+        AoTDIndustryRecipePlugin recipe = AoTDIndustryRecipeManager.getInstance().getActiveRecipe(industry);
+        if (recipe == null || !(industry instanceof BaseIndustry base)) {
+            industry.unapply();
+            return;
+        }
+        boolean direct = AoTDIndustryRecipePlugin.supportsDirectRecipes(industry);
+        Map<String, MutableStat> demand = new LinkedHashMap<>();
+        Map<String, MutableStat> exactDemand = new LinkedHashMap<>();
+        try {
+            if (!direct || !industry.isFunctional()) {
+                if (recipe.doesFullyOverrideIndustry()) recipe.cancelIndustryEffects(industry);
+                recipe.applyRecipeToIndustry(base);
+            }
+            for (MutableCommodityQuantity entry : AoTDSupplyDemandData.getDemandEntries(industry, true)) {
+                if (!entry.getQuantity().isUnmodified() || entry.getQuantity().getBaseValue() != 0f) {
+                    demand.put(entry.getCommodityId(), entry.getQuantity().createCopy());
+                }
+            }
+            if (industry instanceof AoTDBaseIndustry exact) {
+                exact.getExactDemand().forEach((id, stat) -> exactDemand.put(id, stat.createCopy()));
+            }
+        } finally {
+            if (!direct) {
+                recipe.unapply(base);
+                recipe.unapplyMarketEffects(industry.getMarket(), industry.getId());
+            }
+            industry.unapply();
+        }
+        demand.forEach((id, saved) -> {
+            MutableStat quantity = industry.getDemand(id).getQuantity();
+            quantity.unmodify();
+            quantity.setBaseValue(saved.getBaseValue());
+            quantity.applyMods(saved);
+        });
+        if (industry instanceof AoTDBaseIndustry exact) {
+            exact.getExactDemand().clear();
+            exact.getExactDemand().putAll(exactDemand);
+        }
     }
 
     public static void restoreIndustry(Industry industry) {
         industry.getSupplyBonusFromOther().unmodifyFlat(AoTDIndustryData.source);
         industry.getDemandReductionFromOther().unmodifyFlat(AoTDIndustryData.source);
+        industry.getSupplyBonus().unmodifyFlat(AoTDIndustryData.source);
+        industry.getDemandReduction().unmodifyFlat(AoTDIndustryData.source);
+        if (!AoTDIndustryRecipePlugin.supportsDirectRecipes(industry)
+                && AoTDIndustryRecipeManager.getInstance().getActiveRecipe(industry) != null) {
+            AoTDRecipeCondition.reapplyIndustry(industry);
+            return;
+        }
         industry.unapply();
         industry.apply();
+        AoTDToolboxFoodProd.refreshFoodBonus(industry);
     }
 
     public static int getReduction() {

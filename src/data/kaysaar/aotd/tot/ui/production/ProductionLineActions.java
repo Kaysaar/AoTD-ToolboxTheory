@@ -6,6 +6,7 @@ import com.fs.starfarer.api.Global;
 import com.fs.starfarer.api.input.InputEventAPI;
 import com.fs.starfarer.api.ui.Alignment;
 import com.fs.starfarer.api.ui.ButtonAPI;
+import com.fs.starfarer.api.ui.LabelAPI;
 import com.fs.starfarer.api.ui.CustomPanelAPI;
 import com.fs.starfarer.api.ui.CutStyle;
 import com.fs.starfarer.api.ui.PositionAPI;
@@ -15,12 +16,13 @@ import data.kaysaar.aotd.tot.recipes.AoTDProductionLineManager;
 
 
 import java.util.List;
+import data.kaysaar.aotd.tot.ui.onhover.ButtonOnHoverInfo;
 
 public class ProductionLineActions implements ExtendedUIPanelPlugin {
     final CustomPanelAPI mainPanel;
     final ProductionLinesUI owner;
     TooltipMakerAPI tooltip;
-    ButtonAPI applyAll, viewResult;
+    ButtonAPI applyAll, forceApply;
 
     public ProductionLineActions(float width, ProductionLinesUI owner) {
         this.owner = owner;
@@ -36,53 +38,37 @@ public class ProductionLineActions implements ExtendedUIPanelPlugin {
         float width = mainPanel.getPosition().getWidth();
         float buttonWidth = 200f;
         tooltip = mainPanel.createUIElement(width, 25f, false);
-        applyAll = tooltip.addButton("Apply on all markets", null, Misc.getBasePlayerColor(),
+        var queue = AoTDProductionLineManager.queuedReport();
+        LabelAPI queuedLabel = tooltip.addPara(queue.getQueueSummary(), Misc.getHighlightColor(), 4f);
+        queuedLabel.autoSizeToWidth((float) Math.ceil(queuedLabel.computeTextWidth(queuedLabel.getText())) + 1f);
+        queuedLabel.setHighlightOnMouseover(true);
+        tooltip.addTooltipTo(new ProductionQueueTooltip(queue), queuedLabel, TooltipMakerAPI.TooltipLocation.ABOVE, false);
+        applyAll = tooltip.addButton("Apply on markets", null, Misc.getBasePlayerColor(),
                 Misc.getDarkPlayerColor(), Alignment.MID, CutStyle.BOTTOM, buttonWidth, 25f, 0f);
-        applyAll.getPosition().inTL(width-buttonWidth-5, 0);
-        addHelp("Queues these defaults for all player-controlled markets at month end. Applying again replaces the queued order. "
-                + "Recipes that cannot be used on a particular market are skipped.");
+        applyAll.getPosition().inTL(width - 2f * buttonWidth - 10f, 0);
+        addHelp(applyAll, "Apply on markets", "Waiting industries update demand immediately. Operating industries switch at month end. Industries with manual plans or queued local changes keep their local choices.");
+        forceApply = tooltip.addButton("Force Apply on markets", null, Misc.getBasePlayerColor(),
+                Misc.getDarkPlayerColor(), Alignment.MID, CutStyle.BOTTOM, buttonWidth, 25f, 0f);
+        forceApply.getPosition().inTL(width - buttonWidth - 5f, 0);
+        addHelp(forceApply, "Force Apply on markets", "Overrides manual plans and queued local changes. Waiting industries update demand immediately. Operating industries switch at month end. Industries that cannot use the faction recipe are skipped.");
         boolean enabled = owner.table != null && !owner.table.lines.isEmpty();
         applyAll.setEnabled(enabled);
-        if (AoTDProductionLineManager.getLastApplication() != null) {
-            viewResult = tooltip.addButton("View last result", null, Misc.getBasePlayerColor(),
-                    Misc.getDarkPlayerColor(), Alignment.MID, CutStyle.BOTTOM, 150f, 25f, 0f);
-            viewResult.getPosition().inTL(width - buttonWidth - 165f, 0);
-        }
+        forceApply.setEnabled(enabled);
         mainPanel.addUIElement(tooltip).inTL(0, 0);
     }
 
-    private void addHelp(final String text) {
-        tooltip.addTooltipToPrevious(new TooltipMakerAPI.TooltipCreator() {
-            @Override public boolean isTooltipExpandable(Object param) { return false; }
-            @Override public float getTooltipWidth(Object param) { return 400f; }
-            @Override
-            public void createTooltip(TooltipMakerAPI tooltip, boolean expanded, Object param) {
-                tooltip.addPara(text, 0f);
-                tooltip.addPara(AoTDProductionLineManager.previewApplication().getSummary(), Misc.getHighlightColor(), 12f);
-                if (AoTDProductionLineManager.hasPendingApplication()) {
-                    tooltip.addPara("A plan change is queued for month end.", Misc.getHighlightColor(), 10f);
-                }
-            }
-        }, TooltipMakerAPI.TooltipLocation.ABOVE, false);
+    private void addHelp(ButtonAPI button, String title, String description) {
+        tooltip.addTooltipTo(new ButtonOnHoverInfo(380f, false, null, description, null, null, null, title), button,
+                TooltipMakerAPI.TooltipLocation.ABOVE, false);
     }
 
     @Override
     public void advance(float amount) {
-        if (applyAll == null) return;
-        if(applyAll.isChecked()){
-            applyAll.setChecked(false);
-            showResult(AoTDProductionLineManager.applyToAllMarketsDetailed());
-            createUI();
-        }
-        if (viewResult != null && viewResult.isChecked()) {
-            viewResult.setChecked(false);
-            showResult(AoTDProductionLineManager.getLastApplication());
-        }
-    }
-
-    private void showResult(AoTDProductionLineManager.ApplicationReport report) {
-        if (report == null) return;
-        AshMisc.initPopUpDialog(new ProductionPlanApplicationDialog(report),
+        if (applyAll == null || !applyAll.isChecked() && !forceApply.isChecked()) return;
+        boolean force = forceApply.isChecked();
+        applyAll.setChecked(false);
+        forceApply.setChecked(false);
+        AshMisc.initPopUpDialog(new ProductionMarketPicker(force, this::createUI),
                 Math.min(720f, Global.getSettings().getScreenWidth() - 40f),
                 Math.min(550f, Global.getSettings().getScreenHeight() - 40f));
     }
@@ -92,7 +78,7 @@ public class ProductionLineActions implements ExtendedUIPanelPlugin {
         if (tooltip != null) mainPanel.removeComponent(tooltip);
         tooltip = null;
         applyAll = null;
-        viewResult = null;
+        forceApply = null;
     }
 
     @Override public void positionChanged(PositionAPI position) { }

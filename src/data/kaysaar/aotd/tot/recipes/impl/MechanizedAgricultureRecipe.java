@@ -13,12 +13,14 @@ import java.util.Map;
 
 public class MechanizedAgricultureRecipe extends AoTDIndustryRecipePlugin {
 
+    private static final int FOOD_BONUS = 1;
+    private static final int MACHINERY_BONUS_PERCENT = 10;
     private static final String BONUS_ID = "aotd_mechanized_agriculture_bonus";
 
     @Override
     public Map<String, Integer> getVanillaProdUnits(Industry industry, int marketSize) {
         Map<String, Integer> units = new LinkedHashMap<>();
-        units.put(Commodities.FOOD, marketSize + 1);
+        units.put(Commodities.FOOD, FOOD_BONUS);
         return units;
     }
 
@@ -35,7 +37,7 @@ public class MechanizedAgricultureRecipe extends AoTDIndustryRecipePlugin {
         int size = industry.getMarket().getSize();
         industry.demand(Commodities.HEAVY_MACHINERY, Math.max(1, size - 2));
         industry.demand(Commodities.ORGANICS, Math.max(1, size - 3));
-        industry.supply(Commodities.FOOD, size + 1);
+        industry.getSupply(Commodities.FOOD).getQuantity().modifyFlat("mechanized",FOOD_BONUS);
 
         applyDeficitToProduction(industry,
                 new String[]{Commodities.HEAVY_MACHINERY, Commodities.ORGANICS},
@@ -43,7 +45,7 @@ public class MechanizedAgricultureRecipe extends AoTDIndustryRecipePlugin {
 
         if (industry.getMaxDeficit(Commodities.HEAVY_MACHINERY).two == 0) {
             industry.getSupply(Commodities.FOOD).getQuantity()
-                    .modifyMult(BONUS_ID, 1.25f, "Fully mechanized cultivation");
+                    .modifyMult(BONUS_ID, 1f + MACHINERY_BONUS_PERCENT / 100f, "Fully mechanized cultivation");
         } else {
             unapply(industry);
         }
@@ -52,6 +54,7 @@ public class MechanizedAgricultureRecipe extends AoTDIndustryRecipePlugin {
     @Override
     public void unapply(BaseIndustry industry) {
         industry.getSupply(Commodities.FOOD).getQuantity().unmodifyMult(BONUS_ID);
+        industry.getSupply(Commodities.FOOD).getQuantity().unmodifyFlat("mechanized");
     }
 
     @Override
@@ -73,6 +76,7 @@ public class MechanizedAgricultureRecipe extends AoTDIndustryRecipePlugin {
     @Override
     public void createAdditionalEffectsSection(TooltipMakerAPI tooltip) {
         tooltip.addSectionHeading("Additional effects", Alignment.MID, 12f);
-        tooltip.addPara("Food output increases by 25% when heavy machinery demand is fully met.", 6f);
+        tooltip.addPara("Adds %s to food production from farmland. Meeting %s demand increases food output by a further %s.",
+                6f, com.fs.starfarer.api.util.Misc.getHighlightColor(), "+" + FOOD_BONUS, "Heavy Machinery", MACHINERY_BONUS_PERCENT + "%");
     }
 }

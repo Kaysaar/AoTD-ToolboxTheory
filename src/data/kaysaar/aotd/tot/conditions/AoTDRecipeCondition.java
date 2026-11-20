@@ -6,6 +6,8 @@ import com.fs.starfarer.api.impl.campaign.econ.BaseMarketConditionPlugin;
 import data.kaysaar.aotd.tot.recipes.AoTDIndustryRecipeLocalManager;
 import data.kaysaar.aotd.tot.recipes.AoTDIndustryRecipeManager;
 import data.kaysaar.aotd.tot.recipes.AoTDIndustryRecipePlugin;
+import data.kaysaar.aotd.tot.scripts.economy.AoTDIndustryData;
+import data.kaysaar.aotd.tot.scripts.economy.AoTDUpdateMarketAgainTask;
 
 public class AoTDRecipeCondition extends BaseMarketConditionPlugin {
     public static final String ID = "aotd_recipe_controller";
@@ -17,14 +19,19 @@ public class AoTDRecipeCondition extends BaseMarketConditionPlugin {
     }
 
     public static void reapplyIndustry(Industry industry) {
+        if (AoTDIndustryData.getInstance(industry.getMarket()).isPending(industry.getId())) {
+            AoTDUpdateMarketAgainTask.applyPendingIndustrySuppression(industry);
+            return;
+        }
         AoTDIndustryRecipeLocalManager local = AoTDIndustryRecipeManager.findLocalManager(industry.getMarket());
         AoTDIndustryRecipePlugin recipe = local == null ? null : local.getActiveRecipe(industry);
         if (recipe == null || AoTDIndustryRecipePlugin.supportsDirectRecipes(industry)) {
             industry.reapply();
-            return;
+        } else {
+            if (!recipe.doesFullyOverrideIndustry()) industry.reapply();
+            local.applyIndirect(industry);
         }
-        if (!recipe.doesFullyOverrideIndustry()) industry.reapply();
-        local.applyIndirect(industry);
+        AoTDToolboxFoodProd.refreshFoodBonus(industry);
     }
 
     @Override

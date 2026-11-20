@@ -88,6 +88,7 @@ public class CatalyticRefiningRecipe extends AoTDIndustryRecipePlugin {
     @Override
     public void createAdditionalEffectsSection(TooltipMakerAPI tooltip) {
         tooltip.addSectionHeading("Additional effects", Alignment.MID, 12f);
-        tooltip.addPara("Metals and rare metals output increase by 20% when volatiles demand is fully met.", 6f);
+        tooltip.addPara("%s output increases by %s when %s demand is fully met.", 6f,
+                com.fs.starfarer.api.util.Misc.getHighlightColor(), "Metals and rare metals", "20%", "Volatiles");
     }
 }

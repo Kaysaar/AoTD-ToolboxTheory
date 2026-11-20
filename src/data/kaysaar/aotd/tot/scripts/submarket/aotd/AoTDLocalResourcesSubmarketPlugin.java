@@ -11,7 +11,9 @@ import com.fs.starfarer.api.impl.campaign.submarkets.LocalResourcesSubmarketPlug
 import com.fs.starfarer.api.ui.Alignment;
 import com.fs.starfarer.api.ui.TooltipMakerAPI;
 import com.fs.starfarer.api.util.Misc;
+import data.kaysaar.aotd.tot.misc.AoTDToolboxMisc;
 import data.kaysaar.aotd.tot.plugins.AoTDCommodityEconSpecManager;
+import data.kaysaar.aotd.tot.scripts.commoditydata.AoTDCommodityMarketData;
 import data.kaysaar.aotd.tot.scripts.commoditydata.AoTDCommodityOnMarket;
 import data.kaysaar.aotd.tot.scripts.economy.AoTdMainWorkTask2;
 
@@ -41,22 +43,7 @@ public class AoTDLocalResourcesSubmarketPlugin extends LocalResourcesSubmarketPl
 
     @Override
     public int getEstimatedShortageCounteringCostPerMonth() {
-        List<CommodityOnMarketAPI> all = new ArrayList<CommodityOnMarketAPI>(market.getAllCommodities());
-
-        float totalCost = 0f;
-
-        CargoAPI cargo = getCargo();
-
-        for (CommodityOnMarketAPI commodity : all) {
-            if (commodity instanceof AoTDCommodityOnMarket com) {
-                float units = getDeficitCountered(com);
-                if (units > 0) {
-                    float per = LocalResourcesSubmarketPlugin.getStockpilingUnitPrice(com.getSpec(), true);
-                    totalCost += units * per;
-                }
-            }
-        }
-        return (int) totalCost;
+        return (int) AoTDToolboxMisc.getStockpileCost(market);
     }
 
     public float getDeficitCountered(AoTDCommodityOnMarket commodity){
@@ -80,6 +67,7 @@ public class AoTDLocalResourcesSubmarketPlugin extends LocalResourcesSubmarketPl
                 left.removeCommodity(com.getId(), free);
                 cargo.removeCommodity(com.getId(), drawAmount);
                 commodity.getExcDefData().setDeficit((int) -drawAmount,commodity,30,"aotd_shortage_counter_"+Misc.genUID());
+                AoTDCommodityMarketData.updateLocalAvailability(commodity);
 
                 drawAmount -= free;
                 if (market.isPlayerOwned() && drawAmount > 0) {

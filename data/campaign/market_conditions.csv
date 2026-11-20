@@ -1,9 +1,10 @@
 name,id,planetary,decivRemove,script,desc,icon,order
 ,,,,,,,
+Production plans,aotd_recipe_controller,,TRUE,data.kaysaar.aotd.tot.conditions.AoTDRecipeCondition,,graphics/icons/markets/cryosanctum.png,99998
 ToolboxFoodDem,aotd_toolbox_food_corrector,,TRUE,data.kaysaar.aotd.tot.conditions.AoTDToolboxFoodProd,,graphics/icons/markets/cryosanctum.png,99999
 CivSupplyContract,aotd_civ_contract_pop_boost,,TRUE,data.kaysaar.aotd.tot.conditions.AoTDToolboxCivContractPopBoost,,graphics/icons/markets/cryosanctum.png,10
 ToolboxFoodDemStart,aotd_toolbox_food_corrector_start,,TRUE,data.kaysaar.aotd.tot.conditions.AoTDToolboxFoodProdCanceler,,graphics/icons/markets/cryosanctum.png,1
-,,,,,,,
+Relic AM Refinery Monopoly,aotd_sindira_fuel_booster,,TRUE,data.kaysaar.aotd.tot.conditions.SindrianRefineryMastery,"With the culmination of deep studies on the Syncroton Core discovered by Andrada, Sindrian Refineries produce AM fuels nearly on the levels of the Domain Era. Thanks to the extreme levels of control and NDAs, maintain their monopoly on the ship fuel market backed by the Sindrian Armada. Even if the Core was stolen somehow, Sindrian Refineries would still vastly outproduce anything currently present in the Sector, albeit at a reduced rate.",graphics/icons/markets/cryosanctum.png,15
 ,,,,,,,
 ,,,,,,,
 ,,,,,,,

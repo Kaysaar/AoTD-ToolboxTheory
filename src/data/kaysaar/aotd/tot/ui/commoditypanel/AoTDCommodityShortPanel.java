@@ -185,34 +185,26 @@ public class AoTDCommodityShortPanel implements ExtendedUIPanelPlugin {
             tooltip.addPara(shortMode ? (number > 0 ? "+" : "") + fmt(number)
                     : AoTDToolboxMisc.getDGSStringWithSign(number), textColor, textPad).setAlignment(al);
 
-        } else if (market instanceof AoTDBaseIndustry ind) {
-            int deficit = ignoreDeficit ? 0 : ind.getDeficitExact(commodityId);
-            if(deficit > 0){
-                tooltip.addPara(fmt(number),Color.ORANGE,2f).setAlignment(al);
-                tooltip.addPara(fmt(-deficit),Misc.getNegativeHighlightColor(),6f).setAlignment(al);
-            }
-            else{
-                tooltip.addPara(fmt(number),textColor,13f).setAlignment(al);
-            }
         } else if (market != null) {
-            int def = market.getMaxDeficit(commodityId).two;
-
-            if (def > 0&&!ignoreDeficit) {
-                MutableStat stat = new MutableStat(def);
-                int min = Math.min(
-                        market.getMarket().getCommodityData(commodityId).getDeficitQuantity(),
-                        AoTDCommodityEconSpecManager.getEconSpec(commodityId)
-                                .getCalculationScript()
-                                .getRawUnitsFromDemand(stat, market.getMarket(), commodityId,market)
-                );
-
+            int deficit = 0;
+            if (!ignoreDeficit) {
+                if (market instanceof AoTDBaseIndustry ind) {
+                    deficit = ind.getDeficitExact(commodityId);
+                } else {
+                    int units = market.getMaxDeficit(commodityId).two;
+                    if (units > 0) {
+                        deficit = Math.min(market.getMarket().getCommodityData(commodityId).getDeficitQuantity(),
+                                AoTDCommodityEconSpecManager.getEconSpec(commodityId).getCalculationScript()
+                                        .getRawUnitsFromDemand(new MutableStat(units), market.getMarket(), commodityId, market));
+                    }
+                }
+            }
+            if (deficit > 0) {
                 tooltip.addPara(fmt(number), Color.ORANGE, 2f).setAlignment(al);
-                tooltip.addPara(fmt(-min), Misc.getNegativeHighlightColor(), 6f).setAlignment(al);
-
+                tooltip.addPara(fmt(-deficit), Misc.getNegativeHighlightColor(), 6f).setAlignment(al);
             } else {
                 tooltip.addPara(fmt(number), textColor, 13f).setAlignment(al);
             }
-
         } else if (contract!=null&&!shortMode) {
             int def = AoTDSectorProductionDemandDataUtils.getTotalProductionFromFaction(commodityId, Factions.PLAYER)-AoTDSectorProductionDemandDataUtils.getTotalDemandFromFactionTillContract(commodityId,Factions.PLAYER,contractId);
             def*=-1;

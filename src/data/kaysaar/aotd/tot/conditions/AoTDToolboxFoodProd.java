@@ -67,20 +67,36 @@ public class AoTDToolboxFoodProd extends BaseMarketConditionPlugin {
         }
 
         for (Industry industry : market.getIndustries()) {
-            if(industry.getSpec().hasTag(Industries.FARMING)||industry.getSpec().hasTag("aquaculture")||industry instanceof Farming){
+            if(isFarming(industry)){
 
-                industry.getSupply(Commodities.FOOD).getQuantity().unmodify(prodId);
-                int total = getSupplyFromIndustry(industry,Commodities.FOOD);
-                int newTotal = (int) Math.round(total*Math.pow(2,market.getSize()-1));
-                int toAdd =Math.max( newTotal-total,0);
-                industry.getSupply(Commodities.FOOD).getQuantity().modifyFlatAlways(prodId, toAdd,"AoTD corrector");
+                applyFoodBonus(industry, industry.getSupply(Commodities.FOOD).getQuantity());
                 industry.getDemand(Commodities.HEAVY_MACHINERY).getQuantity().modifyMultAlways(prodId, Math.round(0.3f*Math.pow(2,market.getSize()-1)),"AoTD corrector");
             }
 
         }
     }
+    private static boolean isFarming(Industry industry) {
+        return industry.getSpec().hasTag(Industries.FARMING) || industry.getSpec().hasTag("aquaculture") || industry instanceof Farming;
+    }
+
+    public static void refreshFoodBonus(Industry industry) {
+        if (!isFarming(industry)) return;
+        MutableStat food = industry.getSupply(Commodities.FOOD).getQuantity();
+        if (food.getFlatStatMod(prodId) != null) applyFoodBonus(industry, food);
+    }
+
+    public static void applyFoodBonus(Industry industry, MutableStat food) {
+        food.unmodify(prodId);
+        int total = getSupplyFromIndustry(industry, food);
+        int scaled = (int) Math.round(total * Math.pow(2, industry.getMarket().getSize() - 1));
+        food.modifyFlatAlways(prodId, Math.max(scaled - total, 0), "AoTD corrector");
+    }
+
     public int getSupplyFromIndustry(Industry industry,String comId){
-        MutableStat stat = industry.getSupply(comId).getQuantity();
+        return getSupplyFromIndustry(industry, industry.getSupply(comId).getQuantity());
+    }
+
+    private static int getSupplyFromIndustry(Industry industry, MutableStat stat) {
         int total = 0;
         float currPenalty = 1f;
         for (MutableStat.StatMod object : stat.getFlatMods().values()) {

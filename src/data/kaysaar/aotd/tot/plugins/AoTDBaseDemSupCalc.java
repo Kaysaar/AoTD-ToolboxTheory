@@ -6,9 +6,7 @@ import com.fs.starfarer.api.campaign.econ.Industry;
 import com.fs.starfarer.api.campaign.econ.MarketAPI;
 import com.fs.starfarer.api.combat.MutableStat;
 import data.kaysaar.aotd.tot.scripts.economy.AoTDIndustryData;
-import data.kaysaar.aotd.tot.scripts.economy.AoTDUpdateMarketAgainTask;
 
-import java.util.Map;
 
 public class AoTDBaseDemSupCalc implements AoTDDemSupCalc{
         public static float econMult = 0.3f;
@@ -33,16 +31,16 @@ public class AoTDBaseDemSupCalc implements AoTDDemSupCalc{
             for (AoTDSupDemListener listener : AoTDCommodityEconSpecManager.getListeners()) {
                 listener.applyEffectsOnMutableStatCopyDemand(statDem,ind,commodityID);
             }
-            int effective = statDem.getModifiedInt();
-            if(statDem.getMult()==0)return 0;
-            for (Map.Entry<String, MutableStat.StatMod> entry : statDem.getFlatMods().entrySet()) {
-                if(entry.getValue().getValue()<0){
-                    int howMuch = (int) -entry.getValue().getValue();
-                    if(howMuch>= AoTDUpdateMarketAgainTask.getReduction()-1){
-                        effective+=AoTDUpdateMarketAgainTask.getReduction();
-                    }
+            MutableStat.StatMod applied = statDem.getFlatStatMod("ind_dr");
+            if (applied != null && ind != null) {
+                MutableStat reduction = ind.getDemandReduction();
+                if (reduction.getFlatStatMod(AoTDIndustryData.source) != null && applied.value == -reduction.getModifiedInt()) {
+                    reduction = reduction.createCopy();
+                    reduction.unmodifyFlat(AoTDIndustryData.source);
+                    statDem.modifyFlat("ind_dr", -reduction.getModifiedInt());
                 }
             }
+            int effective = statDem.getModifiedInt();
             if(effective<=0)return 0;
             float supplyMultComd =  AoTDCommodityEconSpecManager.getEconSpec(commodityID).getDemandMult();
             CommoditySpecAPI spec = Global.getSettings().getCommoditySpec(commodityID);;

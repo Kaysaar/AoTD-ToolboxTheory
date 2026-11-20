@@ -3,12 +3,17 @@ package data.kaysaar.aotd.tot.ui.commoditypanel;
 import ashlib.data.plugins.ui.models.ExtendedUIPanelPlugin;
 import com.fs.starfarer.api.Global;
 import com.fs.starfarer.api.campaign.econ.CommodityOnMarketAPI;
+import com.fs.starfarer.api.campaign.econ.Industry;
 import com.fs.starfarer.api.campaign.econ.MarketAPI;
 import com.fs.starfarer.api.graphics.SpriteAPI;
 import com.fs.starfarer.api.input.InputEventAPI;
+import com.fs.starfarer.api.impl.campaign.submarkets.LocalResourcesSubmarketPlugin;
+import com.fs.starfarer.api.util.Misc;
 import com.fs.starfarer.api.ui.*;
 import data.kaysaar.aotd.tot.plugins.ReflectionUtilis;
 import data.kaysaar.aotd.tot.scripts.commoditydata.AoTDCommodityOnMarket;
+import data.kaysaar.aotd.tot.scripts.economy.AoTDIndustryData;
+import data.kaysaar.aotd.tot.scripts.economy.AoTdMainWorkTask2;
 import data.kaysaar.aotd.tot.ui.commodityDetailedInfo.AoTDDetailedCommodityPanelContent;
 
 import java.awt.*;
@@ -21,6 +26,8 @@ public class AoTDCommodityPanel implements ExtendedUIPanelPlugin {
     AoTDCommodityUITable table;
     SpriteAPI blackBG = Global.getSettings().getSprite("rendering","GlitchSquare");
     MarketAPI market;
+    private List<Industry> displayedIndustries;
+    private long displayedRevision;
     boolean isInDialog = false;
     Object mainColonyPanel;
     AoTDDetailedCommodityPanelContent parent;
@@ -57,6 +64,11 @@ public class AoTDCommodityPanel implements ExtendedUIPanelPlugin {
             mainPanel.removeComponent(contentPanel);
         }
         contentPanel = Global.getSettings().createCustom(mainPanel.getPosition().getWidth(),mainPanel.getPosition().getHeight(),null);
+        if (!market.getIndustries().equals(displayedIndustries)) {
+            AoTdMainWorkTask2.refreshMarketCommodityData(market);
+            displayedIndustries = new ArrayList<>(market.getIndustries());
+        }
+        displayedRevision = AoTDIndustryData.getInstance(market).commodityDataRevision;
         ArrayList<AoTDCommodityOnMarket>commodities = new ArrayList<>();
         for (CommodityOnMarketAPI commodityOnMarketAPI : market.getCommoditiesCopy()) {
             if(commodityOnMarketAPI instanceof AoTDCommodityOnMarket com){
@@ -98,7 +110,7 @@ public class AoTDCommodityPanel implements ExtendedUIPanelPlugin {
         if(!isInDialog){
             minusHeight = 70;
         }
-        if(table!=null){
+        if(table!=null && table.commodities.equals(commodities)){
             table.recreateTable();
         }
         else{
@@ -162,10 +174,17 @@ public class AoTDCommodityPanel implements ExtendedUIPanelPlugin {
 
     @Override
     public void advance(float amount) {
+        if (displayedRevision != AoTDIndustryData.getInstance(market).commodityDataRevision
+                || !market.getIndustries().equals(displayedIndustries)) {
+            createUI();
+        }
         if(shortageButton!=null){
             if(shortageButton.isChecked()){
                 shortageButton.setChecked(false);
                 market.setUseStockpilesForShortages(!market.isUseStockpilesForShortages());
+                if (market.isUseStockpilesForShortages() && Misc.getLocalResources(market) instanceof LocalResourcesSubmarketPlugin stockpiles) {
+                    stockpiles.addAndRemoveStockpiledResources(0f, true, false, false);
+                }
                 if(mainColonyPanel!=null){
                     ReflectionUtilis.invokeMethodWithAutoProjection("recreateWithEconUpdate",mainColonyPanel);
                 }

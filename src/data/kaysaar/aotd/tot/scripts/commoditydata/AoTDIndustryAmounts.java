@@ -11,6 +11,8 @@ import data.kaysaar.aotd.tot.plugins.AoTDCommodityEconSpecManager;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
+import data.kaysaar.aotd.tot.plugins.ReflectionUtilis;
 
 public class AoTDIndustryAmounts {
     public static boolean hasExactDemand(Industry industry,String commodityId) {
@@ -56,6 +58,24 @@ public class AoTDIndustryAmounts {
             ids.addAll((demand ? ind.getExactDemand() : ind.getExactProduction()).keySet());
         }
         return new ArrayList<>(ids);
+    }
+
+    public static List<String> getPreviewCommodityIds(Industry preview, Industry source, boolean demand) {
+        List<String> ids = getCommodityIds(preview, demand);
+        if (source == null || preview == source) return ids;
+        LinkedHashSet<String> ordered = new LinkedHashSet<>();
+        if (source instanceof com.fs.starfarer.api.impl.campaign.econ.impl.BaseIndustry) {
+            Object quantities = ReflectionUtilis.getPrivateVariable(demand ? "demand" : "supply", source);
+            if (quantities instanceof Map<?, ?> entries) {
+                for (Object entry : entries.values()) {
+                    if (entry instanceof MutableCommodityQuantity quantity) ordered.add(quantity.getCommodityId());
+                }
+            }
+        }
+        ordered.addAll(getCommodityIds(source, demand));
+        ordered.retainAll(ids);
+        ordered.addAll(ids);
+        return new ArrayList<>(ordered);
     }
 
     public static boolean hasDemand(Industry industry) {

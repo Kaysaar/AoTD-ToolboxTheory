@@ -17,6 +17,9 @@ import data.kaysaar.aotd.tot.ui.commoditypanel.AoTDCommodityShortPanelCombined;
 
 import data.kaysaar.aotd.tot.industries.AoTDBaseIndustry;
 
+import data.kaysaar.aotd.tot.scripts.commoditydata.AoTDIndustryAmounts;
+import data.kaysaar.aotd.tot.scripts.commoditydata.AoTDSupplyDemandData;
+import java.util.List;
 import java.awt.Color;
 import java.util.Collections;
 import java.util.Map;
@@ -40,6 +43,9 @@ public class AoTDIndustryRecipePlugin {
     public void onInit() { }
     public boolean canBeUsed(Industry industry) { return true; }
     public boolean isVisibleInListOfRecipes(Industry industry) { return true; }
+
+    public String getIndustryNameOverride(BaseIndustry industry) { return null; }
+    public String getIndustryImageOverride(BaseIndustry industry) { return null; }
 
     public String getDescription(Industry industry) { return ""; }
 
@@ -90,6 +96,16 @@ public class AoTDIndustryRecipePlugin {
 
     public void createIndustryTooltipBody(Industry industry, Industry.IndustryTooltipMode mode,
                                           TooltipMakerAPI tooltip, boolean expanded, float width, boolean ignoreDeficits) {
+        createIndustryTooltipBody(industry, mode, tooltip, expanded, width, ignoreDeficits,
+                AoTDIndustryAmounts.getCommodityIds(industry, false).stream()
+                        .filter(id -> AoTDIndustryAmounts.getProduction(industry, id) > 0).toList(),
+                AoTDIndustryAmounts.getCommodityIds(industry, true).stream()
+                        .filter(id -> AoTDIndustryAmounts.getDemand(industry, id) > 0).toList());
+    }
+
+    public void createIndustryTooltipBody(Industry industry, Industry.IndustryTooltipMode mode, TooltipMakerAPI tooltip,
+                                          boolean expanded, float width, boolean ignoreDeficits,
+                                          List<String> production, List<String> demand) {
         MarketAPI market = industry.getMarket();
         String industryDescription = industry.getSpec().getDesc();
         String recipeDescription = getDescription(industry);
@@ -121,10 +137,14 @@ public class AoTDIndustryRecipePlugin {
                 && industry.getUnavailableReason() != null) tooltip.addPara(industry.getUnavailableReason(), Misc.getNegativeHighlightColor(), 10f);
         addMonthlyAmount(tooltip, "Monthly income: %s", industry.getIncome());
         addMonthlyAmount(tooltip, "Monthly upkeep: %s", industry.getUpkeep());
-        tooltip.addSectionHeading("Production", Alignment.MID, 10f);
-        tooltip.addCustom(new AoTDCommodityShortPanelCombined(width, 3, industry, false, false).getMainPanel(), 5f);
-        tooltip.addSectionHeading("Demand & effects", Alignment.MID, 10f);
-        tooltip.addCustom(new AoTDCommodityShortPanelCombined(width, 3, industry, true, ignoreDeficits).getMainPanel(), 5f);
+        if (!production.isEmpty()) {
+            tooltip.addSectionHeading("Production", Alignment.MID, 10f);
+            tooltip.addCustom(new AoTDCommodityShortPanelCombined(width, 3, industry, false, false, production).getMainPanel(), 5f);
+        }
+        if (!demand.isEmpty()) {
+            tooltip.addSectionHeading("Demand & effects", Alignment.MID, 10f);
+            tooltip.addCustom(new AoTDCommodityShortPanelCombined(width, 3, industry, true, ignoreDeficits, demand).getMainPanel(), 5f);
+        }
         if (market.getMemoryWithoutUpdate().getBoolean(AoTDProductionLine.PREVIEW_KEY)) {
             tooltip.addPara("Preview uses a size 6 market with no resource bonuses.", Misc.getGrayColor(), 5f)
                     .setAlignment(Alignment.MID);
@@ -157,7 +177,7 @@ public class AoTDIndustryRecipePlugin {
         industry.getUpkeep().unmodify("ind_hazard");
         String source = "ind_" + industry.getId();
         clearNativeAmounts(industry.getAllSupply(), source, "ind_sb");
-        clearNativeAmounts(industry.getAllDemand(), source, "ind_dr");
+        clearNativeAmounts(AoTDSupplyDemandData.getDemandEntries(industry, AoTDProductionLineManager.isAwaitingAllocation(industry)), source, "ind_dr");
     }
 
     private static void clearNativeAmounts(Iterable<MutableCommodityQuantity> entries, String source, String bonus) {
@@ -180,7 +200,7 @@ public class AoTDIndustryRecipePlugin {
         if (doesFullyOverrideIndustry()) cancelIndustryEffects(industry);
         if (!industry.isFunctional()) return;
         applyRecipeToIndustry(industry);
-        applyMarketEffects(industry.getMarket(), industry.getId());
+        if (!AoTDProductionLineManager.isAwaitingAllocation(industry)) applyMarketEffects(industry.getMarket(), industry.getId());
     }
 
     public static boolean applyRecipeFromIndustry(BaseIndustry industry) {

@@ -14,7 +14,8 @@ import com.fs.starfarer.api.campaign.econ.CommodityOnMarketAPI;
 import com.fs.starfarer.api.campaign.econ.MarketAPI;
 import com.fs.starfarer.api.combat.MutableStat;
 import com.fs.starfarer.api.impl.campaign.ids.Factions;
-import com.fs.starfarer.api.impl.campaign.submarkets.LocalResourcesSubmarketPlugin;
+import com.fs.starfarer.api.campaign.econ.MonthlyReport;
+import com.fs.starfarer.api.impl.campaign.shared.SharedData;
 import com.fs.starfarer.api.util.Misc;
 import com.fs.starfarer.api.ui.CustomPanelAPI;
 import com.fs.starfarer.api.ui.Fonts;
@@ -369,20 +370,18 @@ public class AoTDToolboxMisc {
     }
 
     public static float getStockpileCost(MarketAPI market) {
-        List<CommodityOnMarketAPI> all = new ArrayList<CommodityOnMarketAPI>(market.getAllCommodities());
-
-        float totalCost = 0f;
-
-        for (CommodityOnMarketAPI commodity : all) {
-            if (commodity instanceof AoTDCommodityOnMarket com) {
-                float units = getDeficitCountered(com);
-                if (units > 0) {
-                    float per = LocalResourcesSubmarketPlugin.getStockpilingUnitPrice(com.getSpec(), true);
-                    totalCost += units * per;
-                }
-            }
+        MonthlyReport.FDNode node = SharedData.getData().getCurrentReport().getRoot();
+        node = node.getChildren().get(MonthlyReport.OUTPOSTS);
+        if (node == null) return 0f;
+        node = node.getChildren().get(market.getId());
+        if (node == null) return 0f;
+        node = node.getChildren().get(MonthlyReport.STOCKPILING);
+        if (node == null) return 0f;
+        float total = 0f;
+        for (MonthlyReport.FDNode commodity : node.getChildren().values()) {
+            total += commodity.upkeep;
         }
-        return (int) totalCost;
+        return total;
     }
 
     public static float getExpectedMonthlyNetIncomeFromMarket(MarketAPI market) {

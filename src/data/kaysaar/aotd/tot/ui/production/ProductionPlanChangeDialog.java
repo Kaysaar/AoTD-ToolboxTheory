@@ -62,8 +62,7 @@ public class ProductionPlanChangeDialog extends BasePopUpDialog {
                 content.refreshAvailability();
             }
             boolean allowed = content.canConfirm();
-            confirmButton.setEnabled(allowed);
-            // PopUpUI closes after a checked Confirm, so clear stale/invalid clicks before it handles them.
+            if(confirmButton.isEnabled()!=allowed)confirmButton.setEnabled(allowed);
             if (!allowed && confirmButton.isChecked()) {
                 confirmButton.setChecked(false);
                 content.setStatus(content.getUnavailableReason());

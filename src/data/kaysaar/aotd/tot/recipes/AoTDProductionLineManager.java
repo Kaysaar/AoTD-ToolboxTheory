@@ -3,13 +3,18 @@ package data.kaysaar.aotd.tot.recipes;
 import data.kaysaar.aotd.tot.conditions.AoTDRecipeCondition;
 import ashlib.data.plugins.misc.AshMisc;
 import com.fs.starfarer.api.Global;
+import data.kaysaar.aotd.vok.scripts.research.AoTDMainResearchManager;
 import com.fs.starfarer.api.campaign.econ.Industry;
 import com.fs.starfarer.api.campaign.econ.MarketAPI;
 import com.fs.starfarer.api.loading.IndustrySpecAPI;
 import com.fs.starfarer.api.campaign.rules.MemoryAPI;
 import data.kaysaar.aotd.tot.scripts.commoditydata.AoTDCollectedProduction;
+import data.kaysaar.aotd.tot.scripts.economy.AoTdMainWorkTask2;
+import data.kaysaar.aotd.tot.scripts.economy.AoTDIndustryData;
+import data.kaysaar.aotd.tot.scripts.economy.AoTDUpdateMarketAgainTask;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
@@ -30,6 +35,7 @@ public class AoTDProductionLineManager {
     private static class PendingPlans {
         final Map<String, String> recipes = new LinkedHashMap<>(getPlans());
         final int month = currentMonth();
+        boolean force;
     }
 
     private static class LocalOrder {
@@ -81,7 +87,43 @@ public class AoTDProductionLineManager {
         owners.put(industry.getId(), industry);
     }
 
+    @SuppressWarnings("unchecked")
+    private static void clearManual(Industry industry) {
+        MemoryAPI memory = industry.getMarket().getMemoryWithoutUpdate();
+        Map<String, Industry> owners = (Map<String, Industry>) memory.get(MANUAL_KEY);
+        if (owners == null) return;
+        owners.remove(industry.getId());
+        if (owners.isEmpty()) memory.unset(MANUAL_KEY);
+    }
+
     public static boolean hasLocalOrder(Industry industry) { return localOrders().containsKey(industry); }
+
+    public static boolean isAwaitingAllocation(Industry industry) {
+        return industry.getMarket().getMemoryWithoutUpdate().get(AoTDIndustryData.memKey) instanceof AoTDIndustryData data
+                && data.isPending(industry.getId());
+    }
+
+    private static boolean applyPendingPlan(Industry industry, String recipeId) {
+        AoTDIndustryRecipeLocalManager local = AoTDIndustryRecipeManager.getInstance().getLocalManager(industry);
+        String previous = local.getActiveRecipeId(industry);
+        try {
+            if (!local.setActiveRecipe(industry, recipeId)) return false;
+            AoTDUpdateMarketAgainTask.applyPendingIndustrySuppression(industry);
+        } catch (RuntimeException ex) {
+            Global.getLogger(AoTDProductionLineManager.class).warn("Changing a pending production plan", ex);
+            if (!Objects.equals(previous, local.getActiveRecipeId(industry))) {
+                local.setActiveRecipe(industry, previous);
+                AoTDUpdateMarketAgainTask.applyPendingIndustrySuppression(industry);
+            }
+            return false;
+        }
+        Map<Industry, LocalOrder> orders = localOrders();
+        if (orders.containsKey(industry)) {
+            orders.remove(industry);
+            if (orders.isEmpty()) playerMemory().unset(LOCAL_KEY);
+        }
+        return true;
+    }
 
     public static String localSelection(Industry industry) {
         LocalOrder order = localOrders().get(industry);
@@ -101,6 +143,12 @@ public class AoTDProductionLineManager {
                     || !recipe.isVisibleInListOfRecipes(industry) || getUnavailableReason(recipe, industry) != null) {
                 return false;
             }
+        }
+        if (isAwaitingAllocation(industry)) {
+            if (!applyPendingPlan(industry, recipeId)) return false;
+            markManual(industry);
+            AoTdMainWorkTask2.refreshMarketCommodityData(industry.getMarket());
+            return true;
         }
         Map<Industry, LocalOrder> orders = new LinkedHashMap<>(localOrders());
         orders.put(industry, new LocalOrder(recipeId));
@@ -159,7 +207,7 @@ public class AoTDProductionLineManager {
             if (manager.getRecipesForIndustry(spec.getId()).isEmpty()) continue;
             lines.add(new AoTDProductionLine(spec, getRecipeId(spec.getId())));
         }
-        lines.sort(Comparator.comparing(line -> line.spec.getName(), String.CASE_INSENSITIVE_ORDER));
+        lines.sort(Comparator.comparing(AoTDProductionLine::getIndustryName, String.CASE_INSENSITIVE_ORDER));
         return lines;
     }
 
@@ -169,33 +217,88 @@ public class AoTDProductionLineManager {
     }
 
     public static ApplicationReport applyToAllMarketsDetailed() {
+        return queueMarkets(AshMisc.getMarketsUnderPlayer(), false);
+    }
+
+    @SuppressWarnings("unchecked")
+    private static Map<String, PendingPlans> marketOrders() {
+        Object saved = playerMemory().get(PENDING_KEY);
+        if (saved instanceof Map) return new LinkedHashMap<>((Map<String, PendingPlans>) saved);
+        Map<String, PendingPlans> orders = new LinkedHashMap<>();
+        if (saved instanceof PendingPlans legacy) {
+            for (MarketAPI market : AshMisc.getMarketsUnderPlayer()) orders.put(market.getId(), legacy);
+        }
+        return orders;
+    }
+
+    public static ApplicationReport queueMarkets(List<MarketAPI> markets, boolean force) {
         PendingPlans order = new PendingPlans();
-        ApplicationReport estimate = inspectPlans(order.recipes, null, null, null, localOrders());
-        playerMemory().set(PENDING_KEY, order);
-        return estimate;
+        order.force = force;
+        Set<MarketAPI> targets = new LinkedHashSet<>(markets);
+        targets.retainAll(AshMisc.getMarketsUnderPlayer());
+        Map<String, PendingPlans> orders = marketOrders();
+        for (MarketAPI market : targets) orders.put(market.getId(), order);
+        if (!targets.isEmpty()) playerMemory().set(PENDING_KEY, orders);
+        ApplicationReport report = inspectPlans(targets, orders, null, null, null, Collections.emptyMap(), false);
+        AoTDIndustryRecipeManager manager = AoTDIndustryRecipeManager.getInstance();
+        for (MarketAPI market : targets) {
+            boolean changed = false;
+            for (Industry industry : market.getIndustries()) {
+                if (!isAwaitingAllocation(industry) || manager.getRecipesForIndustry(industry.getId()).isEmpty()) continue;
+                if (!force && (hasManualPlan(industry) || hasLocalOrder(industry))) continue;
+                if (applyPendingPlan(industry, order.recipes.get(industry.getId()))) {
+                    if (force) clearManual(industry);
+                    changed = true;
+                }
+            }
+            if (changed) AoTdMainWorkTask2.refreshMarketCommodityData(market);
+        }
+        return report;
+    }
+
+    public static ApplicationReport previewMarket(MarketAPI market, boolean force) {
+        PendingPlans order = new PendingPlans();
+        order.force = force;
+        return inspectPlans(List.of(market), Collections.singletonMap(market.getId(), order), null, null, null, Collections.emptyMap(), false);
     }
 
     public static ApplicationReport previewApplication() {
-        return inspectPlans(getPlans(), null, null, null, localOrders());
+        return previewApplication(null, null);
     }
 
     public static ApplicationReport previewApplication(String industryId, String recipeId) {
-        return inspectPlans(getPlans(), industryId, recipeId, null);
+        List<MarketAPI> markets = AshMisc.getMarketsUnderPlayer();
+        PendingPlans order = new PendingPlans();
+        Map<String, PendingPlans> orders = new LinkedHashMap<>();
+        for (MarketAPI market : markets) orders.put(market.getId(), order);
+        return inspectPlans(markets, orders, industryId, recipeId, null, Collections.emptyMap(), false);
+    }
+
+    public static String queuedSummary() {
+        return queuedReport().getQueueSummary();
+    }
+
+    public static ApplicationReport queuedReport() {
+        Map<String, PendingPlans> orders = marketOrders();
+        Map<Industry, LocalOrder> local = localOrders();
+        List<MarketAPI> markets = AshMisc.getMarketsUnderPlayer();
+        return inspectPlans(markets, orders, null, null, null, local, true);
     }
 
     public static void applyDuePlans(AoTDCollectedProduction production) {
-        PendingPlans order = (PendingPlans) playerMemory().get(PENDING_KEY);
         int month = currentMonth();
-        boolean bulkDue = order != null && month > order.month;
+        Map<String, PendingPlans> orders = marketOrders();
+        Map<String, PendingPlans> dueMarkets = new LinkedHashMap<>(orders);
+        dueMarkets.values().removeIf(order -> month <= order.month);
         Map<Industry, LocalOrder> pending = localOrders();
-        Map<Industry, LocalOrder> due = new LinkedHashMap<>();
-        for (Map.Entry<Industry, LocalOrder> entry : pending.entrySet()) {
-            if (month > entry.getValue().month) due.put(entry.getKey(), entry.getValue());
-        }
-        if (!bulkDue && due.isEmpty()) return;
-        ApplicationReport result = inspectPlans(bulkDue ? order.recipes : null, null, null, production, due);
+        Map<Industry, LocalOrder> due = new LinkedHashMap<>(pending);
+        due.values().removeIf(order -> month <= order.month);
+        if (dueMarkets.isEmpty() && due.isEmpty()) return;
+        ApplicationReport result = inspectPlans(AshMisc.getMarketsUnderPlayer(), dueMarkets, null, null, production, due, true);
         playerMemory().set(RESULT_KEY, result);
-        if (bulkDue) playerMemory().unset(PENDING_KEY);
+        orders.keySet().removeAll(dueMarkets.keySet());
+        if (orders.isEmpty()) playerMemory().unset(PENDING_KEY);
+        else playerMemory().set(PENDING_KEY, orders);
         if (!due.isEmpty()) {
             pending.keySet().removeAll(due.keySet());
             if (pending.isEmpty()) playerMemory().unset(LOCAL_KEY);
@@ -205,6 +308,10 @@ public class AoTDProductionLineManager {
     public static String getUnavailableReason(AoTDIndustryRecipePlugin recipe, Industry industry) {
         if (recipe == null) return null;
         if (industry == null) return "No industry context is available to check this plan's requirements.";
+        if (Global.getSector() != null && Global.getSettings().getModManager().isModEnabled("aotd_vok")) {
+            String research = AoTDMainResearchManager.getInstance().getMissingRecipeResearch(recipe.getId(), industry.getMarket());
+            if (research != null) return "Required technology: " + research;
+        }
         try {
             if (recipe.canBeUsed(industry)) return null;
             String reason = recipe.getUnavailableReason(industry);
@@ -216,22 +323,21 @@ public class AoTDProductionLineManager {
         }
     }
 
-    private static ApplicationReport inspectPlans(Map<String, String> plans, String onlyIndustry,
-                                                  String selectedRecipe, AoTDCollectedProduction production) {
-        return inspectPlans(plans, onlyIndustry, selectedRecipe, production, Collections.emptyMap());
-    }
-
-    private static ApplicationReport inspectPlans(Map<String, String> plans, String onlyIndustry,
-            String selectedRecipe, AoTDCollectedProduction production, Map<Industry, LocalOrder> local) {
+    private static ApplicationReport inspectPlans(Collection<MarketAPI> markets, Map<String, PendingPlans> orders,
+            String onlyIndustry, String selectedRecipe, AoTDCollectedProduction production, Map<Industry, LocalOrder> local,
+            boolean includeLocal) {
         boolean apply = production != null;
         ApplicationReport report = new ApplicationReport(apply);
         AoTDIndustryRecipeManager manager = AoTDIndustryRecipeManager.getInstance();
-        Set<MarketAPI> markets = new LinkedHashSet<>(AshMisc.getMarketsUnderPlayer());
+        Map<Industry, LocalOrder> protectedOrders = includeLocal ? local : localOrders();
         if (apply) {
             for (MarketAPI market : markets) {
+                PendingPlans order = orders.get(market.getId());
+                boolean force = order != null && order.force;
+                Map<String, String> plans = order == null ? null : order.recipes;
                 for (Industry industry : market.getIndustries()) {
-                    LocalOrder override = local.get(industry);
-                    if (override == null && (plans == null || hasManualPlan(industry))) continue;
+                    LocalOrder override = force ? null : local.get(industry);
+                    if (override == null && (plans == null || !force && (hasManualPlan(industry) || protectedOrders.containsKey(industry)))) continue;
                     if (override == null && manager.getRecipesForIndustry(industry.getId()).isEmpty()) continue;
                     AoTDIndustryRecipePlugin active = manager.getActiveRecipe(industry);
                     if (!Objects.equals(active == null ? null : active.getId(),
@@ -244,12 +350,16 @@ public class AoTDProductionLineManager {
         }
         Set<MarketAPI> changed = new LinkedHashSet<>();
         for (MarketAPI market : markets) {
+            int queuedBefore = report.queuedIndustries;
             boolean hasIndustry = false;
             int changesHere = 0, matchesHere = 0, skippedHere = 0;
+            PendingPlans order = orders.get(market.getId());
+            boolean force = order != null && order.force;
+            Map<String, String> plans = order == null ? null : order.recipes;
             for (Industry industry : new ArrayList<>(market.getIndustries())) {
                 if (onlyIndustry != null && !onlyIndustry.equals(industry.getId())) continue;
-                LocalOrder override = local.get(industry);
-                if (override == null && (plans == null || hasManualPlan(industry))) continue;
+                LocalOrder override = force ? null : local.get(industry);
+                if (override == null && (plans == null || !force && (hasManualPlan(industry) || protectedOrders.containsKey(industry)))) continue;
                 if (override == null && manager.getRecipesForIndustry(industry.getId()).isEmpty()
                         && !plans.containsKey(industry.getId())) continue;
                 hasIndustry = true;
@@ -258,7 +368,12 @@ public class AoTDProductionLineManager {
                 AoTDIndustryRecipePlugin active = manager.getActiveRecipe(industry);
                 String activeId = active == null ? null : active.getId();
                 if (Objects.equals(activeId, recipeId)) {
-                    if (apply && override != null) markManual(industry);
+                    if (override != null || force && (protectedOrders.containsKey(industry) || hasManualPlan(industry))) {
+                        report.queuedIndustries++;
+                        if (!apply && includeLocal) report.addQueueDetail(industry, active, active, force, override != null);
+                    }
+                    if (apply && force) clearManual(industry);
+                    else if (apply && override != null) markManual(industry);
                     report.unchangedIndustries++;
                     matchesHere++;
                     continue;
@@ -290,7 +405,10 @@ public class AoTDProductionLineManager {
                         continue;
                     }
                 }
-                if (apply && override != null) markManual(industry);
+                if (apply && force) clearManual(industry);
+                else if (apply && override != null) markManual(industry);
+                report.queuedIndustries++;
+                if (!apply && includeLocal) report.addQueueDetail(industry, active, recipe, force, override != null);
                 report.changedIndustries++;
                 changesHere++;
                 changed.add(market);
@@ -306,6 +424,7 @@ public class AoTDProductionLineManager {
                 }
             }
             if (hasIndustry) {
+                if (report.queuedIndustries > queuedBefore) report.queuedMarkets++;
                 report.examinedMarkets++;
                 report.marketDetails.add(market.getName() + ": " + changesHere
                         + (apply ? " changed, " : " to change, ") + matchesHere + " already matching, "
@@ -320,12 +439,30 @@ public class AoTDProductionLineManager {
     }
 
     public static class ApplicationReport {
+        public int queuedIndustries, queuedMarkets;
         public final boolean applied;
         public int examinedMarkets, changedMarkets, changedIndustries, unchangedIndustries, skippedIndustries, failedIndustries;
         public final List<String> marketDetails = new ArrayList<>();
         public final List<String> details = new ArrayList<>();
 
         public ApplicationReport(boolean applied) { this.applied = applied; }
+
+        public final transient Map<String, List<String>> queuedByMarket = new LinkedHashMap<>();
+
+        private void addQueueDetail(Industry industry, AoTDIndustryRecipePlugin active, AoTDIndustryRecipePlugin next,
+                                    boolean force, boolean local) {
+            String from = active == null ? "Normal production" : active.getName();
+            String to = next == null ? "Normal production" : next.getName();
+            String change = active == next ? "Keep " + to : from + " to " + to;
+            String order = force ? "Force Apply" : local ? "Local order" : "Faction plan";
+            queuedByMarket.computeIfAbsent(industry.getMarket().getName(), key -> new ArrayList<>())
+                    .add(industry.getCurrentName() + ": " + change + " (" + order + ")");
+        }
+
+        public String getQueueSummary() {
+            return queuedIndustries + (queuedIndustries == 1 ? " recipe queued across " : " recipes queued across ")
+                    + queuedMarkets + (queuedMarkets == 1 ? " market" : " markets");
+        }
 
         public String getSummary() {
             return (applied ? "Changed " : "Will change ") + changedIndustries + " industries across "
@@ -343,7 +480,7 @@ public class AoTDProductionLineManager {
             Industry baseline = best.industry;
             String bestId = null;
             for (AoTDIndustryRecipePlugin recipe : manager.getRecipesForIndustry(line.spec.getId())) {
-                if (!recipe.isVisibleInListOfRecipes(baseline) || !recipe.canBeUsed(baseline)) continue;
+                if (!recipe.isVisibleInListOfRecipes(baseline) || getUnavailableReason(recipe, baseline) != null) continue;
                 AoTDProductionLine candidate = new AoTDProductionLine(line.spec, recipe.getId());
                 if (candidate.error != null) continue;
                 int comparison = Double.compare(candidate.getEfficiency(), best.getEfficiency());

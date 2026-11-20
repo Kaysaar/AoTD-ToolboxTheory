@@ -5,12 +5,26 @@
 			"marketArrow":"graphics/ui/aotd_arrow.png",
 		
 		},
+		"illustrations":{
+			"aotd_trade_event":"graphics/illustrations/aotd_trade_event.png",
 		
-	
+		},
+	"aotd_entities":{
+			"aotd_scaffold_base":"graphics/entities/aotd_scaffold_frame.png",
+			"aotd_scaffold_movable":"graphics/entities/aotd_scaffold_moving_frame.png",
+		
+		},
 
 
 	},
 	"aotd_allow_multithreaded_economy_calculaton":true,
+	"aotd_scavenger_guild_harvest_mode":true,
+	"aotd_scavenger_guild_harvest_allow_overflow":false,
+	"aotd_scavenger_guild_harvest_min_fraction":0.25,
+	"aotd_scavenger_guild_harvest_max_fraction":1.0,
+	"aotd_scavenger_guild_harvest_overflow_max_fraction":1.25,
+	"aotd_scavenger_guild_harvest_failure_chance":0.02,
+	"aotd_scavenger_guild_harvest_maximum_chance":0.02,
 	"decivMinStreak":9
 }
 

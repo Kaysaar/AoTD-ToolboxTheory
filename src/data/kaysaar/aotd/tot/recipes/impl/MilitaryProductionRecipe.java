@@ -85,6 +85,7 @@ public class MilitaryProductionRecipe extends AoTDIndustryRecipePlugin {
     @Override
     public void createAdditionalEffectsSection(TooltipMakerAPI tooltip) {
         tooltip.addSectionHeading("Additional effects", Alignment.MID, 12f);
-        tooltip.addPara("Hand weapons output increases by 25% when rare metals demand is fully met.", 6f);
+        tooltip.addPara("%s output increases by %s when %s demand is fully met.", 6f,
+                com.fs.starfarer.api.util.Misc.getHighlightColor(), "Hand weapons", "25%", "Rare Metals");
     }
 }

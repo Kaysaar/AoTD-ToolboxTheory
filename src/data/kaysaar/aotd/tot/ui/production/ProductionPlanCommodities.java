@@ -71,11 +71,52 @@ public final class ProductionPlanCommodities {
         }
     }
 
+    public static void addSingleLineText(CustomPanelAPI parent, String text, Color color,
+                                         float x, float width, float height, Alignment alignment) {
+        if (width <= 0f) return;
+        LabelAPI label = Global.getSettings().createLabel(text, Fonts.DEFAULT_SMALL);
+        float available = Math.max(0f, width - 4f);
+        boolean overflow = label.computeTextWidth(text) > available;
+        String displayed = text;
+        if (overflow) {
+            String ellipsis = "\u2026";
+            int end = text.length();
+            while (end > 0 && label.computeTextWidth(text.substring(0, end).stripTrailing() + ellipsis) > available) {
+                end = text.offsetByCodePoints(end, -1);
+            }
+            displayed = end == 0 && label.computeTextWidth(ellipsis) > available
+                    ? "" : text.substring(0, end).stripTrailing() + ellipsis;
+        }
+        float lineHeight = label.computeTextHeight("Ag");
+        float top = Math.max(0f, (height - lineHeight) / 2f);
+        label.setText(displayed);
+        label.setColor(color);
+        label.getPosition().setSize(width, lineHeight);
+        label.setAlignment(alignment);
+        parent.addComponent(label).inTL(x, top);
+        if (overflow) {
+            TooltipMakerAPI tooltip = parent.createUIElement(width, lineHeight, false);
+            tooltip.addTooltipTo(new TooltipMakerAPI.TooltipCreator() {
+                @Override public boolean isTooltipExpandable(Object param) { return false; }
+                @Override public float getTooltipWidth(Object param) { return 300f; }
+                @Override public void createTooltip(TooltipMakerAPI tooltip, boolean expanded, Object param) {
+                    tooltip.addPara(text, color, 0f);
+                }
+            }, label, TooltipMakerAPI.TooltipLocation.ABOVE, false);
+            parent.addUIElement(tooltip).inTL(x, top);
+        }
+    }
+
     public static void addText(CustomPanelAPI parent, String text, Color color,
                                float x, float y, float width, float height) {
+        addText(parent, text, color, x, y, width, height, Alignment.MID);
+    }
+
+    public static void addText(CustomPanelAPI parent, String text, Color color, float x, float y,
+                               float width, float height, Alignment alignment) {
         TooltipMakerAPI tooltip = parent.createUIElement(Math.max(1f, width), height, false);
         LabelAPI label = tooltip.addPara(text, color, 0f);
-        label.setAlignment(Alignment.MID);
+        label.setAlignment(alignment);
         label.getPosition().inTL(0, Math.max(0f, (height - label.computeTextHeight(text)) / 2f));
         parent.addUIElement(tooltip).inTL(x, y);
     }

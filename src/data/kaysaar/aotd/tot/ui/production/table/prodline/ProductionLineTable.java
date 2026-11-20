@@ -1,10 +1,9 @@
-package data.kaysaar.aotd.tot.ui.production.table;
+package data.kaysaar.aotd.tot.ui.production.table.prodline;
 
 import ashlib.data.plugins.ui.models.CustomButton;
 import ashlib.data.plugins.ui.models.DropDownButton;
-import ashlib.data.plugins.ui.plugins.UITableImpl;
+import data.kaysaar.aotd.tot.ui.production.table.ProductionTable;
 import com.fs.starfarer.api.ui.ButtonAPI;
-import com.fs.starfarer.api.util.Misc;
 import data.kaysaar.aotd.tot.recipes.AoTDProductionLine;
 
 import java.util.Comparator;
@@ -12,7 +11,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-public class ProductionLineTable extends UITableImpl {
+public class ProductionLineTable extends ProductionTable {
     public final LinkedHashMap<String, Float> widthMap = new LinkedHashMap<>();
     public final List<AoTDProductionLine> lines;
     public AoTDProductionLine currentlyChosen;
@@ -20,7 +19,7 @@ public class ProductionLineTable extends UITableImpl {
     float scroll;
 
     public ProductionLineTable(float width, float height, List<AoTDProductionLine> lines) {
-        super(width, height, true, 0, 0);
+        super(width, height);
         this.lines = lines;
         resizeColumns(width);
         for (AoTDProductionLine line : lines) {
@@ -53,38 +52,21 @@ public class ProductionLineTable extends UITableImpl {
 
     @Override
     public void createSections() {
-        buttonName = addHeader("Name", "name");
-        buttonRecipe = addHeader("Current recipe", "recipe");
-        addHeader("Avg. Prod.", "production").setClickable(false);
-        addHeader("Avg. Dem.", "demand").setClickable(false);
+        buttonName = addHeader("Name", getStartingX("name"), widthMap.get("name"), true);
+        buttonRecipe = addHeader("Current recipe", getStartingX("recipe"), widthMap.get("recipe"), true);
+        addHeader("Avg. Prod.", getStartingX("production"), widthMap.get("production"), false);
+        addHeader("Avg. Dem.", getStartingX("demand"), widthMap.get("demand"), false);
         mainPanel.addUIElement(tooltipOfButtons).inTL(0, 0);
-    }
-
-    private ButtonAPI addHeader(String text, String column) {
-        ButtonAPI button = tooltipOfButtons.addAreaCheckbox(text, SortingState.NON_INITIALIZED,
-                Misc.getBasePlayerColor(), Misc.getDarkPlayerColor(), Misc.getBrightPlayerColor(),
-                widthMap.get(column), 20, 0f);
-        button.getPosition().inTL(10f + getStartingX(column), 0);
-        return button;
     }
 
     @Override
     public void createTable() {
-        // UITableImpl's default body uses the full height before its 22px header offset.
-        panelToWorkWith = mainPanel.createCustomPanel(width, height - 22f, null);
-        tooltipOfImpl = panelToWorkWith.createUIElement(width, height - 22f, true);
-        for (DropDownButton button : dropDownButtons) {
-            button.resetUI();
-            button.createUI();
-            tooltipOfImpl.addCustom(button.getPanelOfImpl(), 2f);
-        }
-        panelToWorkWith.addUIElement(tooltipOfImpl).inTL(0, 0);
+        super.createTable();
         if (tooltipOfImpl.getExternalScroller() != null) {
             scroll = Math.max(0f, Math.min(scroll, tooltipOfImpl.getHeightSoFar() - (height - 22f) + 2f));
             tooltipOfImpl.getExternalScroller().setYOffset(scroll);
         }
         updateHighlight();
-        mainPanel.addComponent(panelToWorkWith).inTL(0, 22f);
     }
 
     public float getScroll() {
@@ -100,7 +82,7 @@ public class ProductionLineTable extends UITableImpl {
     public void advance(float amount) {
         super.advance(amount);
         getScroll();
-        sort(buttonName, Comparator.comparing(button -> ((ProductionLineDropDownButton) button).line.spec.getName(),
+        sort(buttonName, Comparator.comparing(button -> ((ProductionLineDropDownButton) button).line.getIndustryName(),
                 String.CASE_INSENSITIVE_ORDER));
         sort(buttonRecipe, Comparator.comparing(button -> ((ProductionLineDropDownButton) button).line.getRecipeName(),
                 String.CASE_INSENSITIVE_ORDER));

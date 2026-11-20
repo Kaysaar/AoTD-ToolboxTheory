@@ -7,7 +7,7 @@ import com.fs.starfarer.api.ui.CustomPanelAPI;
 import com.fs.starfarer.api.ui.PositionAPI;
 import data.kaysaar.aotd.tot.recipes.AoTDProductionLine;
 import data.kaysaar.aotd.tot.recipes.AoTDProductionLineManager;
-import data.kaysaar.aotd.tot.ui.production.table.ProductionLineTable;
+import data.kaysaar.aotd.tot.ui.production.table.prodline.ProductionLineTable;
 
 import java.util.List;
 
