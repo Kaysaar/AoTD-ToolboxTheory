@@ -1,4 +1,1 @@
 id,name,industryTiedTo,pluginClass
-aotd_mechanized_agriculture,Mechanized Agriculture,farming,data.kaysaar.aotd.tot.recipes.impl.MechanizedAgricultureRecipe
-aotd_military_production,Military Production,heavyindustry,data.kaysaar.aotd.tot.recipes.impl.MilitaryProductionRecipe
-aotd_catalytic_refining,Catalytic Refining,refining,data.kaysaar.aotd.tot.recipes.impl.CatalyticRefiningRecipe

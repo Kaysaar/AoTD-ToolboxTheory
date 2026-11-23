@@ -7,6 +7,7 @@ import com.fs.starfarer.api.campaign.econ.MarketAPI;
 import com.fs.starfarer.api.impl.campaign.ids.Conditions;
 import com.fs.starfarer.api.campaign.econ.MarketConditionAPI;
 import data.kaysaar.aotd.tot.conditions.AoTDRecipeCondition;
+import data.kaysaar.aotd.tot.plugins.ReflectionUtilis;
 import data.kaysaar.aotd.tot.scripts.commoditydata.AoTDCommodityOnMarket;
 import data.kaysaar.aotd.tot.scripts.commoditydata.AoTDIndustryAmounts;
 import data.kaysaar.aotd.tot.scripts.commoditydata.AoTDSupplyDemandData;
@@ -22,7 +23,7 @@ public class AoTDPreviewMarket {
 
     public static MarketAPI getMarket() {
         MarketAPI market = (MarketAPI) Global.getSector().getMemoryWithoutUpdate().get("$aotd_checkout_market");
-        if (market == null) {
+        if (market == null || !(market.getAccessibilityMod() instanceof AoTDPreviewAccessibility)) {
             market = createMarket();
             Global.getSector().getMemoryWithoutUpdate().set("$aotd_checkout_market", market);
         }
@@ -93,6 +94,7 @@ public class AoTDPreviewMarket {
 
     public static MarketAPI createMarket(boolean addTemporarySupply) {
         MarketAPI market = Global.getFactory().createMarket("to_delete", "TEst", 6);
+        ReflectionUtilis.setPrivateVariableFromSuperclass("accessibilityMod", market, new AoTDPreviewAccessibility());
         market.addCondition("aotd_toolbox_food_corrector_start");
         market.addCondition(Conditions.FARMLAND_ADEQUATE);
         market.addCondition(Conditions.ORE_MODERATE);

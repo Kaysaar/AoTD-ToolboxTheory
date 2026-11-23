@@ -80,7 +80,7 @@ public class AoTDExcDefData {
 
             if(commodity.getMarket().hasSubmarket(Submarkets.LOCAL_RESOURCES)){
                 if(commodity.getMarket().getSubmarket(Submarkets.LOCAL_RESOURCES).getCargo()!=null){
-                    if (!commodity.getSpec().isMeta()) {
+                    if (!commodity.getSpec().isMeta() && !commodity.getSpec().hasTag(AoTDTradeTags.AOTD_CUSTOM_SUBMARKET_HANDLE)) {
                         commodity.getMarket().getSubmarket(Submarkets.LOCAL_RESOURCES).getCargo().addCommodity(commodity.getId(),commodity.getExcessQuantity());
                     }
                     commodity.getTradeMod().unmodify();

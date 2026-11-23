@@ -1,5 +1,6 @@
 package data.kaysaar.aotd.tot.industries;
 
+import data.kaysaar.aotd.tot.stablestructures.impl.AoTDAPCImpl;
 import com.fs.starfarer.api.Global;
 import com.fs.starfarer.api.campaign.FactionAPI;
 import com.fs.starfarer.api.campaign.econ.CommodityOnMarketAPI;
@@ -213,14 +214,17 @@ public abstract class AoTDBaseIndustry extends BaseIndustry {
     public int getDemandExact(String commodityId) {
         MutableStat stat = exactDemand.get(commodityId);
         if(stat == null)return 0;
-        return Math.max(0,stat.getModifiedInt());
+        return Math.max(0, Math.round(stat.getModifiedInt() * AoTDAPCImpl.demandMultiplier(this, commodityId)));
     }
 
     public int getProductionExact(String commodityId) {
         MutableStat stat = exactProduction.get(commodityId);
         if(stat == null)return 0;
         if(!tooltipPreview && (isPending() || !isFunctional()))return 0;
-        return Math.max(0,stat.getModifiedInt());
+        int raw = Math.max(0, stat.getModifiedInt());
+        float bonus = AoTDAPCImpl.outputSizeBonus(this);
+        if (raw == 0 || bonus == 0f) return raw;
+        return raw + Math.round(bonus * AoTDCommodityEconSpecManager.getCargoAmountFromSupplyOrDemand(1, false, commodityId));
     }
 
     public int getRawDemand(String commodityId) {

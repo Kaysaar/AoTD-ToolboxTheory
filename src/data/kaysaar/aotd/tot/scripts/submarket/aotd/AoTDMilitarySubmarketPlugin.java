@@ -1,5 +1,7 @@
 package data.kaysaar.aotd.tot.scripts.submarket.aotd;
 
+import data.kaysaar.aotd.tot.strings.AoTDTradeTags;
+
 import com.fs.starfarer.api.Global;
 import com.fs.starfarer.api.campaign.econ.CommodityOnMarketAPI;
 import com.fs.starfarer.api.impl.campaign.submarkets.MilitarySubmarketPlugin;
@@ -7,6 +9,12 @@ import com.fs.starfarer.api.impl.campaign.submarkets.MilitarySubmarketPlugin;
 import java.util.Random;
 
 public class AoTDMilitarySubmarketPlugin extends MilitarySubmarketPlugin {
+    @Override
+    public void addAndRemoveStockpiledResources(CommodityOnMarketAPI com, float amount, boolean withShortageCountering, boolean withDecreaseToLimit, boolean withCargoUpdate) {
+        if (com.getCommodity().hasTag(AoTDTradeTags.AOTD_CUSTOM_SUBMARKET_HANDLE)) return;
+        super.addAndRemoveStockpiledResources(com, amount, withShortageCountering, withDecreaseToLimit, withCargoUpdate);
+    }
+
     @Override
     public int getStockpileLimit(CommodityOnMarketAPI com) {
         //		int demand = com.getMaxDemand();

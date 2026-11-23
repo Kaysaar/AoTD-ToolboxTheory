@@ -2,6 +2,7 @@
 package data.kaysaar.aotd.tot.listeners;
 
 import ashlib.data.plugins.misc.AshMisc;
+import data.kaysaar.aotd.tot.stablestructures.impl.AoTDAPCImpl;
 import data.kaysaar.aotd.tot.conditions.AoTDToolboxFoodProd;
 import data.kaysaar.aotd.tot.recipes.AoTDIndustryRecipeManager;
 import data.kaysaar.aotd.tot.recipes.AoTDIndustryRecipePlugin;
@@ -67,6 +68,10 @@ public class AoTDToobloxIndustryListener implements IndustryOptionProvider {
     @Override
     @SuppressWarnings("unchecked")
     public void addToIndustryTooltip(Industry ind, Industry.IndustryTooltipMode mode, TooltipMakerAPI tooltip, float width, boolean expanded) {
+        AoTDAPCImpl apc = AoTDAPCImpl.getAt(ind);
+        if (apc != null && apc.isIntegrated(ind)) {
+            tooltip.addPara("%s", 5f, Misc.getHighlightColor(), "Integrated with APC");
+        }
         if(ind instanceof AoTDBaseIndustry)return;
 
         MarketAPI market = ind.getMarket();

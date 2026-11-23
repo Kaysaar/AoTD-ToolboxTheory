@@ -3,10 +3,7 @@ aotd_makeshift_comm_relay,CUSTOM,A folding dish and a compact hyperwave transmit
 aotd_makeshift_sensor_array,CUSTOM,"A cluster of folding antennae samples the surrounding hyperfield. The array transmits its readings to passing fleets, extending the reach of their onboard sensors.",,,
 aotd_makeshift_nav_buoy,CUSTOM,This compact buoy measures the local hyperfield and broadcasts drive corrections. Navigators can use its signal to maintain a higher burn through the system.,,,
 aotd_spaceframe_modules,RESOURCE,"An incredibly modular and durable piece of hardware, integrating via various sub-variant types the sub-systems needed for whatever construct it is needed for. Spacers often joke that these things are so rugged and durable that they'll outlast the stable point they're assembled at, perhaps one day someone will be able to prove if this is true.",,,
-aotd_apc,CUSTOM,"This refinery station devours volatile rich asteroids normally ignored by skimmer mining fleets for use in industrial centers in the system by using civilian mass drivers to be launch their payloads.
-These volatiles are used to enhance various industries and processes that otherwise would be quite wasteful energy and material wise. 
-
-A dedicated and carefully screened astronavigation department avoids potential weaponization of outbound volatile shipments by making sure that any trajectory not properly calculated will end up in the system's primary, avoiding possible impacts populated worlds and stations.",,,
+aotd_apc,CUSTOM,"The Asteroid Processing Center can break down an entire asteroid in a matter of days. Cargo tugs haul rock from the belt to its processing lines and ferry the recovered ores and gases to local industry.",,,
 aotd_scav_enclave,CUSTOM,"A local franchise of the Scavenger Guild. In exchange for a small cut for the system owner and a tax exemption, the guild regulates any salvage located in system from the various activities that stellar societies partake in. 
 
 Whilst the guild itself claims the majority share of salvage, the more wreckage and debris fields in system, the bigger the haul the guild can bring in, for both them and their partners.",,,

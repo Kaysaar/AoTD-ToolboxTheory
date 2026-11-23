@@ -6,7 +6,7 @@ aotd_dissable_break_for_salvage_pl,COB_DisableIndividualOptions,"$faction.id == 
 !$tag:aotd_frontier_device",SetEnabled COB_salvage false,"$name is a massive structure that cannot be dismantled through conventional means. A proper dismantling operation would take several weeks to complete.
 
 As the structure belongs to your faction, its dismantling can instead be ordered through the Star Systems & Colonies tab.",,
-aotd_stable_open,OpenInteractionDialog,$tag:aotd_stable_location,"ShowDefaultVisual
+aotd_stable_open,OpenInteractionDialog,$tag:aotd_stable_location score:10000,"ShowDefaultVisual
 PrintDescription 1
 FireAll AoTDSTablePointAddOptionsOrText",,,
 aotd_stable_open_text,AoTDSTablePointAddOptionsOrText,,,"This stable point can support the construction of massive orbital structures.
@@ -18,7 +18,7 @@ Objectives printDescription
 FireAll COB_AddOptions
 FireBest COB_DisableOptionsIfNeeded
 FireAll COB_DisableIndividualOptions",,,
-aotd_cob_dissable_control,COB_DisableIndividualOptions,,SetEnabled COB_takeControl false,,,
+aotd_cob_dissable_control,COB_DisableIndividualOptions,!$objectiveNonFunctional,SetEnabled COB_takeControl false,,,
 ,,,,,,
 aotd_wormhole_add_opt,AoTDSTablePointAddOptionsOrText,Objectives hasWormholeAnchor,,,40:SL_wormhole:Deploy a wormhole anchor,
 aotd_add_opt_exit,AoTDSTablePointAddOptionsOrText,,"SetShortcut SL_Leave ""ESCAPE""",,100:SL_Leave:Leave,

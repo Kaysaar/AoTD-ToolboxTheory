@@ -5,8 +5,8 @@ nav_buoy_makeshift,20000,40,aotd_spaceframe_modules:80,,data.kaysaar.aotd.tot.st
 nav_buoy,750000,40,aotd_spaceframe_modules:800,nav_buoy_makeshift,data.kaysaar.aotd.tot.stablestructures.impl.NavBuoyImpl,2
 sensor_array_makeshift,20000,40,aotd_spaceframe_modules:80,,data.kaysaar.aotd.tot.stablestructures.impl.SensorArrayMakeshiftImpl,3
 sensor_array,900000,40,aotd_spaceframe_modules:750,sensor_array_makeshift,data.kaysaar.aotd.tot.stablestructures.impl.SensorArrayImpl,3
-stellar_mirror,300000,90,aotd_spaceframe_modules:120,,data.kaysaar.aotd.tot.stablestructures.impl.StellarMirrorArrayImpl,110
-stellar_shade,300000,90,aotd_spaceframe_modules:120,,data.kaysaar.aotd.tot.stablestructures.impl.StellarShadeArrayImpl,111
+stellar_mirror,300000,90,aotd_spaceframe_modules:600,,data.kaysaar.aotd.tot.stablestructures.impl.StellarMirrorArrayImpl,110
+stellar_shade,300000,90,aotd_spaceframe_modules:600,,data.kaysaar.aotd.tot.stablestructures.impl.StellarShadeArrayImpl,111
 aotd_apc,650000,70,aotd_spaceframe_modules:390,,data.kaysaar.aotd.tot.stablestructures.impl.AoTDAPCImpl,120
 aotd_scav_enclave,850000,60,aotd_spaceframe_modules:1200,,data.kaysaar.aotd.tot.stablestructures.impl.AoTDScavGuild,
 ,,,,,,

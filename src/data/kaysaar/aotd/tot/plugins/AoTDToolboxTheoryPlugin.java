@@ -91,6 +91,7 @@ import org.apache.log4j.Logger;
 
 import java.util.*;
 
+import static data.kaysaar.aotd.tot.misc.AoTDToolboxMisc.setIndustryOnPlanet;
 import static com.fs.starfarer.api.impl.codex.CodexDataV2.*;
 
 
@@ -195,9 +196,9 @@ public class AoTDToolboxTheoryPlugin extends BaseModPlugin implements MarketCont
         renameObjectiveSpec(Entities.COMM_RELAY_MAKESHIFT, "Comm Relay");
         renameObjectiveSpec(Entities.NAV_BUOY_MAKESHIFT, "Nav Buoy");
         renameObjectiveSpec(Entities.SENSOR_ARRAY_MAKESHIFT, "Sensor Array");
-        Global.getSettings().getCustomEntitySpec(Entities.STABLE_LOCATION).getTags().remove(Tags.STABLE_LOCATION);
         Global.getSettings().getCustomEntitySpec(Entities.STABLE_LOCATION).getTags().add("aotd_stable_location");
-        for (CustomEntitySpecAPI allSpec : Global.getSettings().getAllSpecs(Global.getSettings().getCustomEntitySpec(Entities.STABLE_LOCATION).getClass())) {
+        for (String s : AoTDStableStructureSpecManager.getSpecsList().keySet()) {
+            CustomEntitySpecAPI allSpec = Global.getSettings().getCustomEntitySpec(s);
             if (allSpec.getTags().contains(Tags.OBJECTIVE)) {
                 allSpec.getTags().remove(Tags.OBJECTIVE);
                 allSpec.getTags().add("aotd_objective");
@@ -390,15 +391,21 @@ public class AoTDToolboxTheoryPlugin extends BaseModPlugin implements MarketCont
 
     @Override
     public void onGameLoad(boolean newGame) {
-        FrontierDeviceExpiry.restoreDeviceTooltips();
         if (!Global.getSector().getCharacterData().getAbilities().contains(DeployFrontierKit.ID)) {
             Global.getSector().getCharacterData().addAbility(DeployFrontierKit.ID);
         }
+        Global.getSector().getGenericPlugins().addPlugin(new AoTDBuildObjectiveTypePicker(), true);
         AoTDNewIndustryDefaults.install();
         AoTDEconomyRouteManager.install();
         AoTDStableStructureAdvanceScript.install();
 
         if (newGame) {
+            if (!Global.getSector().getMemoryWithoutUpdate().getBoolean("$nex_randomSector")) {
+                setIndustryOnPlanet("Askonia", "Volturn", "aotd_spaceframe_foundry", null, null, false, null, null);
+                setIndustryOnPlanet("Naraka", "Nachiketa", "aotd_spaceframe_foundry", null, null, false, null, null);
+                setIndustryOnPlanet("Hybrasil", "Eochu Bres", "aotd_spaceframe_foundry", null, null, false, null, null);
+                setIndustryOnPlanet("Thule", "Kazeron", "aotd_spaceframe_foundry", null, null, false, null, null);
+            }
             Set<String> missingStructureSpecs = new LinkedHashSet<>();
             for (StarSystemAPI systemsWithPlayerColony : getSystemsWithColonies()) {
                 for (CustomCampaignEntityAPI customCampaignEntityAPI : systemsWithPlayerColony.getCustomEntitiesWithTag(AoTDTags.AOTD_OBJECTIVE)) {

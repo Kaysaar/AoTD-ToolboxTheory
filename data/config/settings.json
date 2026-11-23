@@ -17,6 +17,8 @@
 
 
 	},
+	"partsForSaleBaseSuppliesFraction":0.00116,
+	"partsForSaleBaseProductionFraction":0.00232,
 	"aotd_allow_multithreaded_economy_calculaton":true,
 	"aotd_scavenger_guild_harvest_mode":true,
 	"aotd_scavenger_guild_harvest_allow_overflow":false,

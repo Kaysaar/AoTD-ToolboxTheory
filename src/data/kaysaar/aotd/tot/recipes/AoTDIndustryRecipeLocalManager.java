@@ -2,6 +2,8 @@ package data.kaysaar.aotd.tot.recipes;
 
 import com.fs.starfarer.api.campaign.econ.Industry;
 import com.fs.starfarer.api.campaign.econ.MarketAPI;
+import com.fs.starfarer.api.campaign.econ.MutableCommodityQuantity;
+import com.fs.starfarer.api.impl.campaign.ids.Commodities;
 import com.fs.starfarer.api.impl.campaign.econ.impl.BaseIndustry;
 
 import com.fs.starfarer.api.util.Pair;
@@ -88,6 +90,12 @@ public class AoTDIndustryRecipeLocalManager {
                 recipePlugins.remove(id);
                 continue;
             }
+            String recipeId = industryRecipes.get(id);
+            if (applying && getActiveRecipe(id) == null && current instanceof BaseIndustry base && clearRetiredRecipe(base, recipeId)) {
+                setActiveRecipe(current, null);
+                AoTDRecipeCondition.reapplyIndustry(current);
+                continue;
+            }
             owners().put(id, current);
             if (applying) updateAppearance(current, getActiveRecipe(id));
             if (AoTDIndustryRecipePlugin.supportsDirectRecipes(current)) continue;
@@ -95,6 +103,26 @@ public class AoTDIndustryRecipeLocalManager {
             if (applying) applyIndirect(current);
             else clearEffects(id, current);
         }
+    }
+
+    private boolean clearRetiredRecipe(BaseIndustry industry, String recipeId) {
+        String extraInput;
+        switch (recipeId) {
+            case "aotd_mechanized_agriculture" -> extraInput = Commodities.ORGANICS;
+            case "aotd_catalytic_refining" -> extraInput = Commodities.VOLATILES;
+            case "aotd_military_production" -> extraInput = Commodities.HEAVY_MACHINERY;
+            default -> { return false; }
+        }
+        industry.demand(extraInput, 0);
+        industry.getDemand(extraInput).getQuantity().unmodifyFlat("ind_dr");
+        for (MutableCommodityQuantity supply : industry.getAllSupply()) {
+            supply.getQuantity().unmodify(recipeId + "_bonus");
+            industry.supply(2, supply.getCommodityId(), 0, "");
+            if ("aotd_mechanized_agriculture".equals(recipeId) && Commodities.FOOD.equals(supply.getCommodityId())) {
+                supply.getQuantity().unmodifyFlat("mechanized");
+            }
+        }
+        return true;
     }
 
     public void applyIndirect(Industry industry) {

@@ -1,5 +1,7 @@
 package data.kaysaar.aotd.tot.scripts.submarket.nex;
 
+import data.kaysaar.aotd.tot.strings.AoTDTradeTags;
+
 import com.fs.starfarer.api.Global;
 import com.fs.starfarer.api.campaign.CargoAPI;
 import com.fs.starfarer.api.campaign.econ.CommodityOnMarketAPI;
@@ -22,6 +24,12 @@ import exerelin.campaign.submarkets.Nex_LocalResourcesSubmarketPlugin;
 import java.util.*;
 
 public class AoTDxNexLocalResourcesSubmarketPlugin extends Nex_LocalResourcesSubmarketPlugin {
+    @Override
+    public void addAndRemoveStockpiledResources(CommodityOnMarketAPI com, float amount, boolean withShortageCountering, boolean withDecreaseToLimit, boolean withCargoUpdate) {
+        if (com.getCommodity().hasTag(AoTDTradeTags.AOTD_CUSTOM_SUBMARKET_HANDLE)) return;
+        super.addAndRemoveStockpiledResources(com, amount, withShortageCountering, withDecreaseToLimit, withCargoUpdate);
+    }
+
     private static final float STOCKPILE_ADVANCE_INTERVAL_DAYS = 0.05f;
 
     private transient boolean inAdvance;
@@ -209,7 +217,7 @@ public class AoTDxNexLocalResourcesSubmarketPlugin extends Nex_LocalResourcesSub
         int j = 0;
         for (CommodityOnMarketAPI com : all) {
             if (com.isNonEcon()) continue;
-            if (com.getCommodity().isMeta()) continue;
+            if (com.getCommodity().isMeta() || com.getCommodity().hasTag(AoTDTradeTags.AOTD_CUSTOM_SUBMARKET_HANDLE)) continue;
 
             if (!shouldHaveCommodity(com)) continue;
 

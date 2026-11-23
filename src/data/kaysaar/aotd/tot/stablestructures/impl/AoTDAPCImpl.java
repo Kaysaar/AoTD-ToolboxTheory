@@ -14,7 +14,20 @@ import data.kaysaar.aotd.tot.ui.starsystems.stuctures.map.APCLocationPicker;
 import data.kaysaar.aotd.tot.ui.starsystems.stuctures.map.StructureLocationPicker;
 import org.lwjgl.util.vector.Vector2f;
 
+import com.fs.starfarer.api.Global;
+import com.fs.starfarer.api.campaign.econ.Industry;
+import com.fs.starfarer.api.campaign.econ.MarketAPI;
+import com.fs.starfarer.api.impl.campaign.ids.Commodities;
+import com.fs.starfarer.api.impl.campaign.ids.Industries;
+import kaysaar.bmo.buildingmenu.BuildingMenuMisc;
+import data.kaysaar.aotd.vok.scripts.research.AoTDMainResearchManager;
+import data.kaysaar.aotd.tot.scripts.commoditydata.AoTDCommodityOnMarket;
+import data.kaysaar.aotd.tot.scripts.economy.AoTDIndustryData;
+
 import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 public class AoTDAPCImpl extends AoTDLinkedStructureImpl {
 
@@ -23,6 +36,86 @@ public class AoTDAPCImpl extends AoTDLinkedStructureImpl {
     private static final float CENTER_TOLERANCE = 2f;
 
     public static final float VISIBLE_BELT_WIDTH = 300f;
+
+
+    private static final String ACTIVE_APC = "$aotd_active_apc";
+    private Set<Industry> operating;
+    private Set<Industry> heavyIndustries;
+    private List<MarketAPI> affected;
+    private MarketAPI supplyMarket;
+
+    public static AoTDAPCImpl getAt(Industry industry) {
+        if (industry == null || industry.getMarket() == null) return null;
+        return (AoTDAPCImpl) industry.getMarket().getMemoryWithoutUpdate().get(ACTIVE_APC);
+    }
+
+    public boolean isIntegrated(Industry industry) {
+        return operating != null && operating.contains(industry);
+    }
+
+    @Override
+    public void apply() {
+        if (currentlyAssignedToken == null) return;
+        affected = new ArrayList<>(Global.getSector().getEconomy().getMarkets(currentlyAssignedToken.getStarSystem()));
+        operating = new HashSet<>();
+        heavyIndustries = new HashSet<>();
+        for (MarketAPI market : affected) {
+            market.getMemoryWithoutUpdate().set(ACTIVE_APC, this);
+            if (!market.isPlayerOwned() || !isPlayerOwned()) continue;
+            boolean participating = false;
+            for (Industry industry : market.getIndustries()) {
+                if (inIndustryTree(industry, Industries.REFINING) && industry.isFunctional()
+                        && !AoTDIndustryData.getInstance(market).isPending(industry.getId())) {
+                    operating.add(industry);
+                    participating = true;
+                }
+            }
+            if (participating) {
+                for (Industry industry : market.getIndustries()) {
+                    if (inIndustryTree(industry, Industries.HEAVYINDUSTRY)) heavyIndustries.add(industry);
+                }
+                market.getAccessibilityMod().modifyFlat(getModId(), -0.10f, "Integrated with APC");
+            }
+        }
+    }
+
+    @Override
+    public void unapply() {
+        if (supplyMarket != null) {
+            if (supplyMarket.getCommodityData(Commodities.VOLATILES) instanceof AoTDCommodityOnMarket volatiles) {
+                volatiles.getSupplyDemandData().getAdditionalDemand().unmodify(getModId());
+            }
+            supplyMarket = null;
+        }
+        if (affected == null) return;
+        for (MarketAPI market : affected) {
+            if (market.getMemoryWithoutUpdate().get(ACTIVE_APC) == this) market.getMemoryWithoutUpdate().unset(ACTIVE_APC);
+            market.getAccessibilityMod().unmodify(getModId());
+        }
+        affected = null;
+    }
+
+    private static boolean inIndustryTree(Industry industry, String root) {
+        return root.equals(industry.getId()) || BuildingMenuMisc.getIndustryTree(root).contains(industry.getSpec());
+    }
+
+    public static float demandMultiplier(Industry industry, String commodity) {
+        AoTDAPCImpl apc = getAt(industry);
+        if (apc == null) return 1f;
+        float change = Commodities.ORE.equals(commodity) || Commodities.RARE_ORE.equals(commodity) ? -0.10f : 0f;
+        int count = Math.min(6, apc.operating.size());
+        if (apc.operating.contains(industry)) change += 0.05f * count;
+        if (apc.heavyIndustries.contains(industry)) {
+            change -= 0.025f * count;
+        }
+        return 1f + change;
+    }
+
+    public static float outputSizeBonus(Industry industry) {
+        AoTDAPCImpl apc = getAt(industry);
+        if (apc == null || !apc.operating.contains(industry)) return 0f;
+        return 0.5f * Math.min(6, apc.operating.size());
+    }
 
     public static boolean isWithinAsteroidBelt(StarSystemAPI system, SectorEntityToken focus, Vector2f position) {
         if (system == null || focus == null || focus.isExpired() || focus.getStarSystem() != system
@@ -68,14 +161,25 @@ public class AoTDAPCImpl extends AoTDLinkedStructureImpl {
         return false;
     }
 
+    private boolean hasRequiredResearch(FactionAPI faction) {
+        return !Global.getSettings().getModManager().isModEnabled("aotd_vok")
+                || AoTDMainResearchManager.getInstance().isAvailableForFaction("aotd_tech_advanced_mining_equipment", faction);
+    }
+
     @Override
     public boolean isAvailableToBuild(StarSystemAPI system, FactionAPI faction) {
-        return faction != null && faction.isPlayerFaction() && !hasExistingAPC(system) && hasSelectableBelt(system);
+        return faction != null && faction.isPlayerFaction() && hasRequiredResearch(faction) && !hasExistingAPC(system) && hasSelectableBelt(system);
+    }
+
+    @Override
+    public boolean showWhenUnavailable(StarSystemAPI system, FactionAPI faction) {
+        return hasRequiredResearch(faction) && super.showWhenUnavailable(system, faction);
     }
 
     @Override
     public String getUnavailableReason(StarSystemAPI system, FactionAPI faction) {
         if (faction == null || !faction.isPlayerFaction()) return "Requires a player-controlled star system.";
+        if (!hasRequiredResearch(faction)) return "Requires Advanced Mining Equipment research.";
         if (hasExistingAPC(system)) return "Only one Asteroid Processing Center may be constructed in each star system.";
         if (!hasSelectableBelt(system)) return "Requires at least one asteroid belt in this system.";
         return super.getUnavailableReason(system, faction);
@@ -126,7 +230,14 @@ public class AoTDAPCImpl extends AoTDLinkedStructureImpl {
     @Override
     public void createTooltipForEffectSection(TooltipMakerAPI tooltip, AoTDStableStructureTooltipMode mode) {
         super.createTooltipForEffectSection(tooltip, mode);
-        tooltip.addPara("Can be constructed within an asteroid belt or up to %s beyond its outer edge. Limited to %s per star system.",
-                5f, Misc.getHighlightColor(), "100 units", "one");
+        tooltip.addPara("The APC processes asteroids to reduce system-wide demand for ore and transplutonic ore by %s.",
+                5f, Misc.getHighlightColor(), "10%");
+        tooltip.addPara("Operating refineries and their upgrades on player colonies in this system connect automatically. Each operating refinery increases input demand by %s and effective production size by %s for every connected refinery, up to %s and %s sizes.",
+                5f, Misc.getHighlightColor(), "5%", "0.5", "30%", "3");
+        tooltip.addPara("On colonies with a connected, operating refinery, Heavy Industry and its upgrades use %s fewer inputs per refinery in the network, up to %s. Each participating colony loses %s accessibility.",
+                5f, Misc.getHighlightColor(), "2.5%", "15%", "10 percentage points");
+        if (affected != null && operating != null) {
+            tooltip.addPara("Operating refineries: %s", 5f, Misc.getHighlightColor(), String.valueOf(operating.size()));
+        }
     }
 }

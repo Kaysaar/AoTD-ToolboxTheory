@@ -1,5 +1,7 @@
 package data.kaysaar.aotd.tot.scripts.commoditydata;
 
+import data.kaysaar.aotd.tot.strings.AoTDTradeTags;
+
 import com.fs.starfarer.api.Global;
 import com.fs.starfarer.api.campaign.econ.CommodityOnMarketAPI;
 import com.fs.starfarer.api.campaign.econ.CommoditySpecAPI;
@@ -285,6 +287,9 @@ public class EffectivePriceCalculator extends PriceCalculator {
     @Override
     public float getRemovePrice(double stock, double amount) {
         if (amount <= 0d) return 0f;
+        if (commodity.getCommodity().hasTag(AoTDTradeTags.AOTD_ALWAYS_BASE_PRICE)) {
+            return (float) (amount / commodity.getUtilityOnMarket() * commodity.getCommodity().getBasePrice());
+        }
         if(commodity.isNonEcon()){
             CommoditySpecAPI specAPI = Global.getSettings().getCommoditySpec(commodity.getId());
             int trueAmount = (int) (amount/commodity.getUtilityOnMarket());

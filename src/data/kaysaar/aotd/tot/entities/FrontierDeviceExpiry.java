@@ -15,19 +15,8 @@ public class FrontierDeviceExpiry extends DelayedActionScript {
         this.device = device;
     }
 
-    public static void restoreDeviceTooltips() {
-        for (EveryFrameScript script : Global.getSector().getScripts()) {
-            if (!(script instanceof FrontierDeviceExpiry expiry)) continue;
-            SectorEntityToken device = expiry.device;
-            if (!(device.getCustomPlugin() instanceof BaseCampaignObjectivePlugin plugin)
-                    || plugin.getClass() != BaseCampaignObjectivePlugin.class) continue;
-            FrontierDevice replacement = new FrontierDevice();
-            replacement.init(device, null);
-            ReflectionUtilis.setPrivateVariableFromSuperclass("plugin", device, replacement);
-        }
-    }
 
-    static int getDaysRemaining(SectorEntityToken device) {
+    public static int getDaysRemaining(SectorEntityToken device) {
         for (EveryFrameScript script : Global.getSector().getScripts()) {
             if (script instanceof FrontierDeviceExpiry expiry && expiry.device == device) {
                 return (int) Math.ceil(expiry.daysLeft);

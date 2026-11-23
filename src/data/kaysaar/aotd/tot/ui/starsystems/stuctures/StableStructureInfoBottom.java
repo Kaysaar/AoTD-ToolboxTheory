@@ -41,8 +41,9 @@ public class StableStructureInfoBottom implements CustomUIPanelPlugin {
         float credits = Global.getSector().getPlayerFleet().getCargo().getCredits().get();
         displayedCredits = credits;
         LabelAPI creditsLabel = tooltip.addPara("Credits: %s", 0f, Misc.getGrayColor(), Color.ORANGE, Misc.getWithDGS(credits));
-        creditsLabel.getPosition().setSize(320, 30);
-        tooltip.addTooltipToPrevious(new TooltipMakerAPI.TooltipCreator() {
+        creditsLabel.setHighlightOnMouseover(true);
+        creditsLabel.getPosition().setSize(creditsLabel.computeTextWidth(creditsLabel.getText()), creditsLabel.getPosition().getHeight());
+        tooltip.addTooltipTo(new TooltipMakerAPI.TooltipCreator() {
             @Override
             public boolean isTooltipExpandable(Object tooltipParam) {
                 return false;
@@ -57,7 +58,7 @@ public class StableStructureInfoBottom implements CustomUIPanelPlugin {
             public void createTooltip(TooltipMakerAPI tooltip, boolean expanded, Object tooltipParam) {
                 tooltip.addPara("Credits you currently have available for construction.", 5f);
             }
-        }, TooltipMakerAPI.TooltipLocation.ABOVE, false);
+        }, creditsLabel, TooltipMakerAPI.TooltipLocation.ABOVE, false);
 
         int used = AoTDToolboxMisc.getUsedSystemStructureSlots(system);
         int maximum = AoTDToolboxMisc.getSystemStructureCapacityStat(system).getModifiedInt();
@@ -66,8 +67,10 @@ public class StableStructureInfoBottom implements CustomUIPanelPlugin {
         Color col = used >= maximum ? Misc.getNegativeHighlightColor() : Color.ORANGE;
         LabelAPI label = tooltip.addPara("System Structures: %s / %s", 5f, Misc.getGrayColor(),
                 col, String.valueOf(used), String.valueOf(maximum));
+        label.setHighlightOnMouseover(true);
+        label.getPosition().setSize(label.computeTextWidth(label.getText()), label.getPosition().getHeight());
         label.getPosition().inTL(330, 0);
-        tooltip.addTooltipToPrevious(new TooltipMakerAPI.TooltipCreator() {
+        tooltip.addTooltipTo(new TooltipMakerAPI.TooltipCreator() {
             @Override
             public boolean isTooltipExpandable(Object tooltipParam) {
                 return false;
@@ -82,7 +85,7 @@ public class StableStructureInfoBottom implements CustomUIPanelPlugin {
             public void createTooltip(TooltipMakerAPI tooltip, boolean expanded, Object tooltipParam) {
                 addSystemStructureCapacityBreakdown(tooltip, system);
             }
-        }, TooltipMakerAPI.TooltipLocation.ABOVE, false);
+        }, label, TooltipMakerAPI.TooltipLocation.ABOVE, false);
 
         contentPanel.addUIElement(tooltip).inTL(0, 0);
         mainPanel.addComponent(contentPanel).inTL(0, 0);

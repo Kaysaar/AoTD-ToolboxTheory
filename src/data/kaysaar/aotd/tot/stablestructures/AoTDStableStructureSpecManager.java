@@ -117,6 +117,10 @@ public class AoTDStableStructureSpecManager {
         return specsList.get(id);
     }
 
+    public static LinkedHashMap<String, AoTDStableStructureSpec> getSpecsList() {
+        return specsList;
+    }
+
     public static void invalidateUpgradeCache() {
         structureUpgrades.clear();
         directUpgrades.clear();

@@ -8,6 +8,7 @@ import com.fs.starfarer.api.ui.Fonts;
 import com.fs.starfarer.api.ui.LabelAPI;
 import com.fs.starfarer.api.ui.TooltipMakerAPI;
 import com.fs.starfarer.api.util.Misc;
+import data.kaysaar.aotd.tot.abilities.DeployFrontierKit;
 import data.kaysaar.aotd.tot.scripts.economy.AoTDSectorProductionDemandDataUtils;
 import data.kaysaar.aotd.tot.scripts.trade.contracts.AoTDTradeContract;
 import data.kaysaar.aotd.tot.scripts.trade.contracts.AoTDTradeContractManager;
@@ -26,6 +27,7 @@ public class PlayerIssuedSupplyContract implements PlayerContractCreatorAPI {
     public static float cut = 0.1f;
     static {
         blackList.add(Commodities.SHIPS);
+        fullProdCommodities.add(DeployFrontierKit.KIT);
     }
 
 
@@ -59,6 +61,7 @@ public class PlayerIssuedSupplyContract implements PlayerContractCreatorAPI {
     @Override
     public LinkedHashSet<String> getAvailableCommoditiesForContract() {
         LinkedHashSet<String> available = new LinkedHashSet<>(AoTDTradeManager.getInstance().getPossibleCommoditiesDemandedOrSupplied());
+        available.add(DeployFrontierKit.KIT);
         blackList.forEach(available::remove);
 
         available.removeIf(x->getMaxLimitForCommodityAmount(x)<=0);
@@ -67,7 +70,7 @@ public class PlayerIssuedSupplyContract implements PlayerContractCreatorAPI {
 
     @Override
     public int getMaxLimitForCommodityAmount(String commodityId) {
-        if(Global.getSettings().getCommoditySpec(commodityId).isMeta())return 0;
+        if (Global.getSettings().getCommoditySpec(commodityId).isMeta()) return 0;
         int totalProd = AoTDSectorProductionDemandDataUtils.getTotalProductionFromFaction(commodityId, Factions.PLAYER);
         if(fullProdCommodities.contains(commodityId)) {
             return totalProd;

@@ -1,11 +1,19 @@
 package data.kaysaar.aotd.tot.scripts.submarket.aotd;
 
+import data.kaysaar.aotd.tot.strings.AoTDTradeTags;
+
 import com.fs.starfarer.api.campaign.econ.CommodityOnMarketAPI;
 import com.fs.starfarer.api.impl.campaign.ids.Commodities;
 import com.fs.starfarer.api.impl.campaign.submarkets.OpenMarketPlugin;
 import data.kaysaar.aotd.tot.scripts.commoditydata.AoTDCommodityOnMarket;
 
 public class AoTDOpenMarketPlugin extends OpenMarketPlugin {
+    @Override
+    public void addAndRemoveStockpiledResources(CommodityOnMarketAPI com, float amount, boolean withShortageCountering, boolean withDecreaseToLimit, boolean withCargoUpdate) {
+        if (com.getCommodity().hasTag(AoTDTradeTags.AOTD_CUSTOM_SUBMARKET_HANDLE)) return;
+        super.addAndRemoveStockpiledResources(com, amount, withShortageCountering, withDecreaseToLimit, withCargoUpdate);
+    }
+
 
 
     @Override

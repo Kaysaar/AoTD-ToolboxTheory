@@ -1,5 +1,6 @@
 package data.kaysaar.aotd.tot.plugins;
 
+import data.kaysaar.aotd.tot.stablestructures.impl.AoTDAPCImpl;
 import com.fs.starfarer.api.Global;
 import com.fs.starfarer.api.campaign.econ.CommoditySpecAPI;
 import com.fs.starfarer.api.campaign.econ.Industry;
@@ -21,7 +22,9 @@ public class AoTDBaseDemSupCalc implements AoTDDemSupCalc{
                 listener.applyEffectsOnMutableStatCopySupply(statSupply,ind,commodityID);
             }
             CommoditySpecAPI spec = Global.getSettings().getCommoditySpec(commodityID);;
-            return (int) Math.floor(  AoTDCommodityEconSpecManager.getEconSpec(commodityID).getSupplyMult()*statSupply.getModifiedInt()*spec.getEconUnit()*econMult);
+            float units = statSupply.getModifiedInt();
+            if (units > 0f) units += AoTDAPCImpl.outputSizeBonus(ind) * statSupply.getMult() * (1f + statSupply.getPercentMod() / 100f);
+            return (int) Math.floor(  AoTDCommodityEconSpecManager.getEconSpec(commodityID).getSupplyMult()*units*spec.getEconUnit()*econMult);
 
         }
 
@@ -44,7 +47,7 @@ public class AoTDBaseDemSupCalc implements AoTDDemSupCalc{
             if(effective<=0)return 0;
             float supplyMultComd =  AoTDCommodityEconSpecManager.getEconSpec(commodityID).getDemandMult();
             CommoditySpecAPI spec = Global.getSettings().getCommoditySpec(commodityID);;
-            return (int) Math.floor(supplyMultComd*effective*spec.getEconUnit()*econMult);
+            return (int) Math.floor(supplyMultComd*effective*spec.getEconUnit()*econMult*AoTDAPCImpl.demandMultiplier(ind, commodityID));
         }
 
         @Override
