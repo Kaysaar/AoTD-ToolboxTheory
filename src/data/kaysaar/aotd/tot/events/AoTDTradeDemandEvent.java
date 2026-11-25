@@ -119,6 +119,13 @@ public class AoTDTradeDemandEvent extends BaseTradeEvent {
     }
 
     @Override
+    public boolean shouldPublishIntel(AshlibBaseEventIntel intel) {
+        if (intel instanceof AoTDColonyShortageIntel report && !report.shouldPublish()) return false;
+        Global.getSector().getIntelManager().queueIntel(intel);
+        return false;
+    }
+
+    @Override
     public void configureEvent() {
         maxAmount = -1;
         minimumDaysBetweenFirings = 0f;

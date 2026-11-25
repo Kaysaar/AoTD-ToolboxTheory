@@ -10,6 +10,11 @@ public class BaseTradeEvent extends AshlibBaseEvent {
     }
 
     @Override
+    public boolean canEvenFireEvent() {
+        return Global.getSector() != null && Global.getSector().getClock().getCycle() > 206;
+    }
+
+    @Override
     public String getImageName() {
         return Global.getSettings().getSpriteName("illustrations", "aotd_trade_event");
     }

@@ -21,7 +21,7 @@ public class DeployFrontierKit extends BaseDurationAbility {
     }
 
     private static String getLocationRestriction(CampaignFleetAPI fleet) {
-        if (fleet == null || !fleet.isPlayerFleet() || fleet.getStarSystem() == null) {
+        if (fleet == null || !fleet.isPlayerFleet() || fleet.isInHyperspace() || fleet.getStarSystem() == null) {
             return "Enter a star system to deploy the kit.";
         }
         for (MarketAPI market : Misc.getMarketsInLocation(fleet.getStarSystem())) {

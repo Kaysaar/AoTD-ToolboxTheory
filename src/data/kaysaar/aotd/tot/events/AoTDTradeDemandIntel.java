@@ -56,6 +56,11 @@ public class AoTDTradeDemandIntel extends AshlibBaseEventIntel {
     }
 
     @Override
+    public boolean canMakeVisibleToPlayer(boolean inCommRange) {
+        return inCommRange && !hasExpired() && super.canMakeVisibleToPlayer(inCommRange);
+    }
+
+    @Override
     public boolean shouldRemoveIntel() {
         return super.shouldRemoveIntel() || hasExpired();
     }

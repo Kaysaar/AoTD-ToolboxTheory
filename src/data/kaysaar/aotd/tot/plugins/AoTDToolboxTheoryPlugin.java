@@ -1,7 +1,6 @@
 package data.kaysaar.aotd.tot.plugins;
 
 
-import data.kaysaar.aotd.tot.abilities.DeployFrontierKit;
 import data.kaysaar.aotd.tot.entities.FrontierDeviceExpiry;
 import data.kaysaar.aotd.tot.recipes.AoTDNewIndustryDefaults;
 import data.kaysaar.aotd.tot.conditions.AoTDRecipeCondition;
@@ -14,6 +13,7 @@ import com.fs.starfarer.api.campaign.CustomEntitySpecAPI;
 import com.fs.starfarer.api.campaign.StarSystemAPI;
 import com.fs.starfarer.api.campaign.econ.*;
 import com.fs.starfarer.api.impl.SharedUnlockData;
+import com.fs.starfarer.api.impl.campaign.ids.Abilities;
 import com.fs.starfarer.api.impl.campaign.fleets.EconomyFleetRouteManager;
 import com.fs.starfarer.api.impl.campaign.graid.StandardGroundRaidObjectivesCreator;
 import com.fs.starfarer.api.impl.campaign.ids.*;
@@ -391,9 +391,6 @@ public class AoTDToolboxTheoryPlugin extends BaseModPlugin implements MarketCont
 
     @Override
     public void onGameLoad(boolean newGame) {
-        if (!Global.getSector().getCharacterData().getAbilities().contains(DeployFrontierKit.ID)) {
-            Global.getSector().getCharacterData().addAbility(DeployFrontierKit.ID);
-        }
         Global.getSector().getGenericPlugins().addPlugin(new AoTDBuildObjectiveTypePicker(), true);
         AoTDNewIndustryDefaults.install();
         AoTDEconomyRouteManager.install();

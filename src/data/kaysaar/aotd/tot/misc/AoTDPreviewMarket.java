@@ -1,11 +1,14 @@
 package data.kaysaar.aotd.tot.misc;
 
 import com.fs.starfarer.api.Global;
+import com.fs.starfarer.api.campaign.SectorEntityToken;
+import com.fs.starfarer.api.campaign.StarSystemAPI;
 import com.fs.starfarer.api.campaign.econ.CommodityOnMarketAPI;
 import com.fs.starfarer.api.campaign.econ.Industry;
 import com.fs.starfarer.api.campaign.econ.MarketAPI;
 import com.fs.starfarer.api.impl.campaign.ids.Conditions;
 import com.fs.starfarer.api.campaign.econ.MarketConditionAPI;
+import com.fs.starfarer.campaign.StarSystem;
 import data.kaysaar.aotd.tot.conditions.AoTDRecipeCondition;
 import data.kaysaar.aotd.tot.plugins.ReflectionUtilis;
 import data.kaysaar.aotd.tot.scripts.commoditydata.AoTDCommodityOnMarket;
@@ -22,12 +25,8 @@ import java.util.Map;
 public class AoTDPreviewMarket {
 
     public static MarketAPI getMarket() {
-        MarketAPI market = (MarketAPI) Global.getSector().getMemoryWithoutUpdate().get("$aotd_checkout_market");
-        if (market == null || !(market.getAccessibilityMod() instanceof AoTDPreviewAccessibility)) {
-            market = createMarket();
-            Global.getSector().getMemoryWithoutUpdate().set("$aotd_checkout_market", market);
-        }
-        return market;
+        Global.getSector().getMemoryWithoutUpdate().unset("$aotd_checkout_market");
+        return createMarket();
     }
 
     public static MarketAPI createMarket(MarketAPI source) {
@@ -94,6 +93,10 @@ public class AoTDPreviewMarket {
 
     public static MarketAPI createMarket(boolean addTemporarySupply) {
         MarketAPI market = Global.getFactory().createMarket("to_delete", "TEst", 6);
+        StarSystemAPI system = new StarSystem("Example");
+        SectorEntityToken entity = system.initNonStarCenter();
+        market.setPrimaryEntity(entity);
+        entity.setMarket(market);
         ReflectionUtilis.setPrivateVariableFromSuperclass("accessibilityMod", market, new AoTDPreviewAccessibility());
         market.addCondition("aotd_toolbox_food_corrector_start");
         market.addCondition(Conditions.FARMLAND_ADEQUATE);

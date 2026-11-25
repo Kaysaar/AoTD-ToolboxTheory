@@ -38,7 +38,7 @@ public class BeyondShippingLanesEvent extends BaseTradeEvent {
 
     @Override
     public boolean canEvenFireEvent() {
-        if (Global.getSector() == null || AoTDEconomy.runningPrePlayerEconomy) return false;
+        if (!super.canEvenFireEvent() || AoTDEconomy.runningPrePlayerEconomy) return false;
         return hasSectorSurplus("fuel")
                 && hasSectorSurplus("supplies");
     }
