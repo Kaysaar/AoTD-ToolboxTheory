@@ -11,20 +11,24 @@ import data.kaysaar.aotd.tot.scripts.economy.AoTDIndustryData;
 
 public class AoTDBaseDemSupCalc implements AoTDDemSupCalc{
         public static float econMult = 0.3f;
+        public static final String RAW_PRODUCTION_MULT = "aotd_raw_production_mult";
         private static final float LN2_INV = (float)(1.0 / Math.log(2.0));
 
         @Override
         public int getRawUnitsFromSupply(MutableStat supply, MarketAPI market, String commodityID,Industry ind) {
-            if(supply.getModifiedInt()<=0)return 0;
             MutableStat statSupply = supply.createCopy();
-            if(statSupply.getMult()==0)return 0;
+            MutableStat.StatMod rawMultiplier = statSupply.getMultStatMod(RAW_PRODUCTION_MULT);
+            if (rawMultiplier != null) statSupply.unmodifyMult(RAW_PRODUCTION_MULT);
+            if (statSupply.getModifiedInt() <= 0 || statSupply.getMult() == 0f) return 0;
             for (AoTDSupDemListener listener : AoTDCommodityEconSpecManager.getListeners()) {
                 listener.applyEffectsOnMutableStatCopySupply(statSupply,ind,commodityID);
             }
             CommoditySpecAPI spec = Global.getSettings().getCommoditySpec(commodityID);;
             float units = statSupply.getModifiedInt();
             if (units > 0f) units += AoTDAPCImpl.outputSizeBonus(ind) * statSupply.getMult() * (1f + statSupply.getPercentMod() / 100f);
-            return (int) Math.floor(  AoTDCommodityEconSpecManager.getEconSpec(commodityID).getSupplyMult()*units*spec.getEconUnit()*econMult);
+            int amount = (int) Math.floor(AoTDCommodityEconSpecManager.getEconSpec(commodityID).getSupplyMult()
+                    * units * spec.getEconUnit() * econMult);
+            return rawMultiplier == null ? amount : (int) Math.floor(amount * (double) rawMultiplier.value);
 
         }
 

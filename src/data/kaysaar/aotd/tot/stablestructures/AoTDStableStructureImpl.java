@@ -93,12 +93,33 @@ public class AoTDStableStructureImpl {
         return true;
     }
 
+    protected boolean hasAnotherStructure(String structureId, FactionAPI faction) {
+        for (StarSystemAPI system : Global.getSector().getStarSystems()) {
+            for (SectorEntityToken token : system.getAllEntities()) {
+                if (token == currentlyAssignedToken || token.isExpired()) continue;
+                if (faction != null && (token.getFaction() == null || !faction.getId().equals(token.getFaction().getId()))) continue;
+                if (structureId.equals(token.getCustomEntityType())) return true;
+                Object value = token.getMemoryWithoutUpdate().get(AoTDStableStructureSpecManager.memKeyInEntities);
+                if (value instanceof AoTDStableStructureImpl structure && structureId.equals(structure.id)) return true;
+            }
+        }
+        return false;
+    }
+
     public boolean showWhenUnavailable(StarSystemAPI systemAPI, FactionAPI factionAttemptingToBuildIt) {
         return true;
     }
 
     public String getUnavailableReason(StarSystemAPI systemAPI, FactionAPI factionAttemptingToBuildIt) {
         return "Construction requirements are not met in this star system.";
+    }
+
+    public Color getHologramColor() {
+        return null;
+    }
+
+    public boolean hasHologramRipple() {
+        return false;
     }
 
     public StructureLocationPicker createLocationPicker(float width, float height, StarSystemAPI systemAPI) {

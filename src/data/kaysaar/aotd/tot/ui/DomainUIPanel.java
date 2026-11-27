@@ -87,6 +87,7 @@ public class DomainUIPanel extends CommandUIPlugin {
             }
         }
         this.mainPanel.addComponent(panelForPlugins).inTL(0, 35);
+        economyCommodityData.logCommodityDataIfSelected(panelMap.get(currentlyChosen));
     }
 
     public void clearUI(boolean clearMusic) {
@@ -188,6 +189,7 @@ public class DomainUIPanel extends CommandUIPlugin {
     @Override
     public void resetCurrentPlugin(ButtonAPI newButton) {
         super.resetCurrentPlugin(newButton);
+        economyCommodityData.logCommodityDataIfSelected(panelMap.get(newButton));
         CommandTabMemoryManager.getInstance().getTabStates().put(getTabStateId(),newButton.getText().toLowerCase());
         if(panelMap.get(newButton).getPlugin() instanceof ExtendedUIPanelPlugin plugin){
 

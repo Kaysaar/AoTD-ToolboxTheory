@@ -368,13 +368,15 @@ public class AoTDToolboxTheoryPlugin extends BaseModPlugin implements MarketCont
         AshlibBaseEventManager.getInstance().addEvent(new AoTDTradeDemandEvent(AoTDTradeDemandEvent.Scope.MARKET));
         AshlibBaseEventManager.getInstance().addEvent(new AoTDContrabandDemandEvent(AoTDTradeDemandEvent.Scope.FACTION));
         AshlibBaseEventManager.getInstance().addEvent(new AoTDContrabandDemandEvent(AoTDTradeDemandEvent.Scope.MARKET));
-        AshlibBaseEventManager.getInstance().addEvent(new BeyondShippingLanesEvent());
-        AshlibBaseEventManager.getInstance().addEvent(new ComfortableLifeEvent());
-        AshlibBaseEventManager.getInstance().addEvent(new HabitWithinReachEvent());
-        AshlibBaseEventManager.getInstance().addEvent(new LowGradeBonanzaEvent());
+//        AshlibBaseEventManager.getInstance().addEvent(new BeyondShippingLanesEvent());
+//        AshlibBaseEventManager.getInstance().addEvent(new ComfortableLifeEvent());
+//        AshlibBaseEventManager.getInstance().addEvent(new HabitWithinReachEvent());
+//        AshlibBaseEventManager.getInstance().addEvent(new LowGradeBonanzaEvent());
+//
+//        AshlibBaseEventManager.getInstance().addEvent(new SeasonOfConstructionEvent());
+//        AshlibBaseEventManager.getInstance().addEvent(new TablesFullEvent());
+
         AshlibBaseEventManager.getInstance().addEvent(new HiddenStashOfResourcesEvent());
-        AshlibBaseEventManager.getInstance().addEvent(new SeasonOfConstructionEvent());
-        AshlibBaseEventManager.getInstance().addEvent(new TablesFullEvent());
     }
 
     public static List<StarSystemAPI> getSystemsWithColonies() {

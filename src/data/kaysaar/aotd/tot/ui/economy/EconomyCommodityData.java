@@ -8,6 +8,7 @@ import com.fs.starfarer.api.input.InputEventAPI;
 import com.fs.starfarer.api.ui.CustomPanelAPI;
 import com.fs.starfarer.api.ui.PositionAPI;
 import com.fs.starfarer.api.util.Misc;
+import data.kaysaar.aotd.tot.scripts.economy.AoTDSectorProductionDemandDataUtils;
 import data.kaysaar.aotd.tot.scripts.trade.manager.AoTDTradeManager;
 import data.kaysaar.aotd.tot.ui.economy.commoditydata.buttons.FactionChooserButton;
 import data.kaysaar.aotd.tot.ui.economy.commoditydata.buttons.GraphPeriodChosenButton;
@@ -15,10 +16,13 @@ import data.kaysaar.aotd.tot.ui.economy.commoditydata.popup.ChooseFactionPopUp;
 import data.kaysaar.aotd.tot.ui.economy.commoditydata.popup.ChoosePeriodPopUp;
 import data.kaysaar.aotd.tot.ui.economy.commoditydata.table.AoTDCommodityProductionDataTable;
 import data.kaysaar.aotd.tot.ui.economy.commoditydata.detailed.AoTDDetailedCommodityPanel;
+import org.apache.log4j.Logger;
 
+import java.util.LinkedHashSet;
 import java.util.List;
 
 public class EconomyCommodityData implements ExtendedUIPanelPlugin {
+    private static final Logger log = Global.getLogger(EconomyCommodityData.class);
     CustomPanelAPI mainPanel, contentPanel;
 
     public EconomyCommodityData(float width, float height) {
@@ -69,6 +73,27 @@ public class EconomyCommodityData implements ExtendedUIPanelPlugin {
     @Override
     public CustomPanelAPI getMainPanel() {
         return mainPanel;
+    }
+
+    public void logCommodityDataIfSelected(CustomPanelAPI selectedPanel) {
+        if (selectedPanel != mainPanel || !log.isInfoEnabled()) return;
+
+        AoTDTradeManager tradeManager = AoTDTradeManager.getInstance();
+        LinkedHashSet<String> factionIds = new LinkedHashSet<>();
+        factionIds.add(Factions.NEUTRAL);
+        if (!AshMisc.getMarketsUnderPlayer().isEmpty()) factionIds.add(Factions.PLAYER);
+        factionIds.addAll(tradeManager.getAllFactionTradeData().keySet());
+        StringBuilder snapshot = new StringBuilder("[AoTD Commodity Data]\nScope\tCommodity\tProduction\tDemand\tNet");
+        for (String factionId : factionIds) {
+            String scope = Factions.NEUTRAL.equals(factionId) ? "Sector" : factionId;
+            for (String commodityId : tradeManager.getPossibleCommoditiesDemandedOrSupplied()) {
+                int production = AoTDSectorProductionDemandDataUtils.getTotalProductionFromFaction(commodityId, factionId);
+                int demand = AoTDSectorProductionDemandDataUtils.getTotalDemandFromFaction(commodityId, factionId);
+                snapshot.append('\n').append(scope).append('\t').append(commodityId)
+                        .append('\t').append(production).append('\t').append(demand).append('\t').append(production - demand);
+            }
+        }
+        log.info(snapshot.toString());
     }
 
     public float widthOfSecondSection = 440;

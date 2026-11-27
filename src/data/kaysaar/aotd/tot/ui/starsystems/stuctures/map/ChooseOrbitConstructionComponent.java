@@ -3,9 +3,7 @@ package data.kaysaar.aotd.tot.ui.starsystems.stuctures.map;
 import ashlib.data.plugins.ui.models.resizable.map.MapEntityComponent;
 import ashlib.data.plugins.ui.models.resizable.map.MapMainComponent;
 import ashlib.data.plugins.ui.models.resizable.map.MapOrbitRenderer;
-import com.fs.starfarer.api.Global;
 import com.fs.starfarer.api.campaign.PlanetAPI;
-import com.fs.starfarer.api.graphics.SpriteAPI;
 import com.fs.starfarer.api.util.Misc;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.util.vector.Vector2f;
@@ -18,8 +16,7 @@ public class ChooseOrbitConstructionComponent extends MapOrbitRenderer {
     private final MapMainComponent mainComponent;
 
 
-    private  SpriteAPI gateSprite;
-    private  float spriteW, spriteH;
+    private StructurePlacementHologram hologram;
 
 
     private boolean clampPlanetOrbitRadius = true;
@@ -57,11 +54,7 @@ public class ChooseOrbitConstructionComponent extends MapOrbitRenderer {
 
     public void setCustomEntitySpecId(String customEntitySpecId) {
         this.customEntitySpecId = customEntitySpecId;
-        this.gateSprite = Global.getSettings().getSprite(
-                Global.getSettings().getCustomEntitySpec(customEntitySpecId).getSpriteName()
-        );
-        this.spriteW = Global.getSettings().getCustomEntitySpec(customEntitySpecId).getSpriteWidth();
-        this.spriteH = Global.getSettings().getCustomEntitySpec(customEntitySpecId).getSpriteHeight();
+        hologram = new StructurePlacementHologram(customEntitySpecId);
     }
     // ------------------------------------------------------------------------
     // Configuration
@@ -140,6 +133,12 @@ public class ChooseOrbitConstructionComponent extends MapOrbitRenderer {
     // ------------------------------------------------------------------------
     // Rendering
     // ------------------------------------------------------------------------
+
+    @Override
+    public void advance(float amount) {
+        super.advance(amount);
+        if (hologram != null) hologram.advance(amount);
+    }
 
     @Override
     public void render(float alphaMult) {
@@ -228,11 +227,7 @@ public class ChooseOrbitConstructionComponent extends MapOrbitRenderer {
         float faceCenterDeg = (float) Math.toDegrees(angleRadToUse) - 90f;
         if (isLocked()) {
             savedRadiusWorld = radiusUI / scale;
-            gateSprite.setSize(spriteW * scale, spriteH * scale);
-            gateSprite.setColor(Color.cyan);
-            gateSprite.setAlphaMult(0.9f * alphaMult);
-            gateSprite.setAngle(faceCenterDeg);
-            gateSprite.renderAtCenter(px, py);
+            hologram.render(px, py, scale, faceCenterDeg, alphaMult);
 
         } else {
             MapEntityComponent.drawFilledCircle(new Vector2f(px, py), 55 * scale, new Color(118, 255, 144), alphaMult);

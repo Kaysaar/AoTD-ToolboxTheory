@@ -56,6 +56,7 @@ public class EconomyUIPanel extends CommandUIPlugin {
             }
         }
         this.mainPanel.addComponent(panelForPlugins).inTL(0, 35);
+        economyCommodityData.logCommodityDataIfSelected(panelMap.get(currentlyChosen));
     }
     @Override
     public void advance(float amount) {
@@ -81,6 +82,7 @@ public class EconomyUIPanel extends CommandUIPlugin {
     @Override
     public void resetCurrentPlugin(ButtonAPI newButton) {
         super.resetCurrentPlugin(newButton);
+        economyCommodityData.logCommodityDataIfSelected(panelMap.get(newButton));
         if(panelMap.get(newButton).getPlugin() instanceof ExtendedUIPanelPlugin plugin){
             plugin.createUI();
         }
